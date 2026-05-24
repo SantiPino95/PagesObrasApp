@@ -9,7 +9,7 @@ public partial class Presupuesto
 
     public int IdObra { get; set; }
 
-    public int IdCliente { get; set; }
+    
 
     public DateOnly FechaEmision { get; set; }
 
@@ -19,7 +19,7 @@ public partial class Presupuesto
 
     public virtual ICollection<DetallePresupuesto> DetallePresupuestos { get; set; } = new List<DetallePresupuesto>();
 
-    public virtual Cliente IdClienteNavigation { get; set; } = null!;
+    
 
     public virtual Obra IdObraNavigation { get; set; } = null!;
 }
