@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿
 using Microsoft.EntityFrameworkCore;
 using PagesObrasApp.Dominio;
-using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 
-namespace PagesObrasApp.Persistencia.Data;
+
+namespace PagesObrasApp.Data;
 
 public partial class ConstruccionDbContext : DbContext
 {
@@ -61,9 +60,12 @@ public partial class ConstruccionDbContext : DbContext
 
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
+    
+    
+    }
 
-        => optionsBuilder.UseMySql("server=localhost;port=3306;database=dbcontru;uid=root;pwd=root", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.7.0-mysql"));
+      
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -439,8 +441,6 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("presupuesto");
 
-            entity.HasIndex(e => e.IdCliente, "Id_Cliente");
-
             entity.HasIndex(e => e.IdObra, "Id_Obra");
 
             entity.Property(e => e.IdPresupuesto).HasColumnName("Id_Presupuesto");
@@ -449,16 +449,12 @@ public partial class ConstruccionDbContext : DbContext
                 .HasDefaultValueSql("'Pendiente'")
                 .HasColumnName("Estado_Presupuesto");
             entity.Property(e => e.FechaEmision).HasColumnName("Fecha_Emision");
-            entity.Property(e => e.IdCliente).HasColumnName("Id_Cliente");
             entity.Property(e => e.IdObra).HasColumnName("Id_Obra");
             entity.Property(e => e.MontoTotal)
                 .HasPrecision(12, 2)
                 .HasColumnName("Monto_Total");
 
-            entity.HasOne(d => d.IdClienteNavigation).WithMany(p => p.Presupuestos)
-                .HasForeignKey(d => d.IdCliente)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("presupuesto_ibfk_2");
+           
 
             entity.HasOne(d => d.IdObraNavigation).WithMany(p => p.Presupuestos)
                 .HasForeignKey(d => d.IdObra)

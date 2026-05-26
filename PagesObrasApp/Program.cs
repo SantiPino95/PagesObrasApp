@@ -1,4 +1,19 @@
+using Microsoft.EntityFrameworkCore;
+using PagesObrasApp.Data;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// 1. Leer la cadena de conexión del appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// 2. Definir la versión exacta de tu servidor MySQL
+var serverVersion = ServerVersion.AutoDetect(connectionString);
+
+// 3. Registrar tu DbContext de forma global
+builder.Services.AddDbContext<ConstruccionDbContext>(options =>
+    options.UseMySql(connectionString, serverVersion));
+
+
 
 // Add services to the container.
 builder.Services.AddRazorPages();
