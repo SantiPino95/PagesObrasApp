@@ -1,17 +1,18 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using PagesObrasApp.Dominio;
-
+using PagesObrasApp.Models;
+using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 
 namespace PagesObrasApp.Data;
 
-public partial class ConstruccionDbContext : DbContext
+public partial class DbContruContext : DbContext
 {
-    public ConstruccionDbContext()
+    public DbContruContext()
     {
     }
 
-    public ConstruccionDbContext(DbContextOptions<ConstruccionDbContext> options)
+    public DbContruContext(DbContextOptions<DbContruContext> options)
         : base(options)
     {
     }
@@ -60,12 +61,9 @@ public partial class ConstruccionDbContext : DbContext
 
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
-    
-    
-    }
-
-      
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseMySql("server=localhost;port=3306;database=dbcontru;uid=root;pwd=root", Microsoft.EntityFrameworkCore.ServerVersion.Parse("9.7.0-mysql"));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -170,9 +168,11 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("empleado_obra");
 
-            entity.HasIndex(e => new { e.IdEmpleado, e.IdObra, e.FechaAsignacion }, "Id_Empleado").IsUnique();
+            entity.HasIndex(e => e.IdEmpleado, "IDX_EmpleadoObra_Empleado");
 
-            entity.HasIndex(e => e.IdObra, "Id_Obra");
+            entity.HasIndex(e => e.IdObra, "IDX_EmpleadoObra_Obra");
+
+            entity.HasIndex(e => new { e.IdEmpleado, e.IdObra, e.FechaAsignacion }, "Id_Empleado").IsUnique();
 
             entity.Property(e => e.IdEmpleadoObra).HasColumnName("Id_Empleado_Obra");
             entity.Property(e => e.FechaAsignacion).HasColumnName("Fecha_Asignacion");
@@ -202,7 +202,9 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("gastos_obra");
 
-            entity.HasIndex(e => e.IdObra, "Id_Obra");
+            entity.HasIndex(e => e.Fecha, "IDX_Gastos_Fecha");
+
+            entity.HasIndex(e => e.IdObra, "IDX_Gastos_Obra");
 
             entity.Property(e => e.IdGasto).HasColumnName("Id_Gasto");
             entity.Property(e => e.CategoriaGasto)
@@ -252,7 +254,7 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("herramientas_asignadas");
 
-            entity.HasIndex(e => e.IdHerramienta, "Id_Herramienta");
+            entity.HasIndex(e => e.IdHerramienta, "IDX_HerramientaAsignada_Herramienta");
 
             entity.Property(e => e.IdObra).HasColumnName("Id_Obra");
             entity.Property(e => e.IdHerramienta).HasColumnName("Id_Herramienta");
@@ -290,7 +292,7 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("material_obra");
 
-            entity.HasIndex(e => e.IdMaterial, "Id_Material");
+            entity.HasIndex(e => e.IdMaterial, "IDX_MaterialObra_Material");
 
             entity.Property(e => e.IdObra).HasColumnName("Id_Obra");
             entity.Property(e => e.IdMaterial).HasColumnName("Id_Material");
@@ -315,7 +317,9 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("novedades_obra");
 
-            entity.HasIndex(e => e.IdEmpleadoObra, "Id_Empleado_Obra");
+            entity.HasIndex(e => e.IdEmpleadoObra, "IDX_Novedad_EmpleadoObra");
+
+            entity.HasIndex(e => e.EstadoRevision, "IDX_Novedad_Estado");
 
             entity.Property(e => e.IdNovedad).HasColumnName("Id_Novedad");
             entity.Property(e => e.Descripcion).HasColumnType("text");
@@ -370,7 +374,9 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("orden_compra");
 
-            entity.HasIndex(e => e.IdProveedor, "Id_Proveedor");
+            entity.HasIndex(e => e.EstadoEntrega, "IDX_OrdenCompra_Estado");
+
+            entity.HasIndex(e => e.IdProveedor, "IDX_OrdenCompra_Proveedor");
 
             entity.Property(e => e.IdOrden).HasColumnName("Id_Orden");
             entity.Property(e => e.EstadoEntrega)
@@ -395,7 +401,9 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("pago_empleado");
 
-            entity.HasIndex(e => e.IdEmpleado, "Id_Empleado");
+            entity.HasIndex(e => e.PeriodoMesAnio, "IDX_PagoEmpleado_Periodo").IsUnique();
+
+            entity.HasIndex(e => e.IdEmpleado, "Id_Empleado").IsUnique();
 
             entity.Property(e => e.IdPagoEmpleado).HasColumnName("Id_Pago_Empleado");
             entity.Property(e => e.FechaPago).HasColumnName("Fecha_Pago");
@@ -407,8 +415,8 @@ public partial class ConstruccionDbContext : DbContext
                 .HasMaxLength(7)
                 .HasColumnName("Periodo_Mes_Anio");
 
-            entity.HasOne(d => d.IdEmpleadoNavigation).WithMany(p => p.PagoEmpleados)
-                .HasForeignKey(d => d.IdEmpleado)
+            entity.HasOne(d => d.IdEmpleadoNavigation).WithOne(p => p.PagoEmpleado)
+                .HasForeignKey<PagoEmpleado>(d => d.IdEmpleado)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("pago_empleado_ibfk_1");
         });
@@ -419,7 +427,9 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("pago_proveedor");
 
-            entity.HasIndex(e => e.IdProveedor, "Id_Proveedor");
+            entity.HasIndex(e => e.IdProveedor, "IDX_PagoProveedor_Proveedor");
+
+            entity.HasIndex(e => e.FechaPago, "IDX_PagoProveedor_fecha");
 
             entity.Property(e => e.IdPagoProveedor).HasColumnName("Id_Pago_Proveedor");
             entity.Property(e => e.FechaPago).HasColumnName("Fecha_Pago");
@@ -441,7 +451,7 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("presupuesto");
 
-            entity.HasIndex(e => e.IdObra, "Id_Obra");
+            entity.HasIndex(e => e.IdObra, "IDX_Presupuesto_Obra");
 
             entity.Property(e => e.IdPresupuesto).HasColumnName("Id_Presupuesto");
             entity.Property(e => e.EstadoPresupuesto)
@@ -453,8 +463,6 @@ public partial class ConstruccionDbContext : DbContext
             entity.Property(e => e.MontoTotal)
                 .HasPrecision(12, 2)
                 .HasColumnName("Monto_Total");
-
-           
 
             entity.HasOne(d => d.IdObraNavigation).WithMany(p => p.Presupuestos)
                 .HasForeignKey(d => d.IdObra)
@@ -484,7 +492,9 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("registro_horas");
 
-            entity.HasIndex(e => e.IdEmpleadoObra, "Id_Empleado_Obra");
+            entity.HasIndex(e => e.IdEmpleadoObra, "IDX_RegistroHoras_EmpleadoObra");
+
+            entity.HasIndex(e => e.Fecha, "IDX_RegistroHoras_Fecha");
 
             entity.Property(e => e.IdRegistro).HasColumnName("Id_Registro");
             entity.Property(e => e.HorasComunes)
@@ -522,7 +532,7 @@ public partial class ConstruccionDbContext : DbContext
 
             entity.ToTable("seguimiento_obra");
 
-            entity.HasIndex(e => e.IdObra, "Id_Obra");
+            entity.HasIndex(e => e.IdObra, "IDX_Seguimiento_Obra");
 
             entity.Property(e => e.IdSeguimiento).HasColumnName("Id_Seguimiento");
             entity.Property(e => e.DescripcionAvance)

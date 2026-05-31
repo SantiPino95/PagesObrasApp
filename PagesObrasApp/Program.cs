@@ -10,7 +10,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 var serverVersion = ServerVersion.AutoDetect(connectionString);
 
 // 3. Registrar tu DbContext de forma global
-builder.Services.AddDbContext<ConstruccionDbContext>(options =>
+builder.Services.AddDbContext<DbContruContext>(options =>
     options.UseMySql(connectionString, serverVersion));
 
 

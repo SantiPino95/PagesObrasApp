@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PagesObrasApp.Dominio;
+namespace PagesObrasApp.Models;
 
 public partial class Cliente
 {
@@ -16,6 +16,4 @@ public partial class Cliente
     public string? Direccion { get; set; }
 
     public virtual ICollection<Obra> Obras { get; set; } = new List<Obra>();
-
-    public virtual ICollection<Presupuesto> Presupuestos { get; set; } = new List<Presupuesto>();
 }
