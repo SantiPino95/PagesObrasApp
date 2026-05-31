@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PagesObrasApp.Dominio;
+namespace PagesObrasApp.Models;
 
 public partial class EmpleadoObra
 {

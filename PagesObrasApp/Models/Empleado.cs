@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PagesObrasApp.Dominio;
+namespace PagesObrasApp.Models;
 
 public partial class Empleado
 {
@@ -21,5 +21,5 @@ public partial class Empleado
 
     public virtual Usuario? IdUsuarioNavigation { get; set; }
 
-    public virtual ICollection<PagoEmpleado> PagoEmpleados { get; set; } = new List<PagoEmpleado>();
+    public virtual PagoEmpleado? PagoEmpleado { get; set; }
 }
