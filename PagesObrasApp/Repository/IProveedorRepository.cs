@@ -1,6 +1,6 @@
 ﻿namespace PagesObrasApp.Repository
 {
-    public interface IProveedoresRepository
+    public interface IProveedorRepository
     {
     }
 }
