@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using PagesObrasApp.Data;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,9 +9,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 // 2. Definir la versión exacta de tu servidor MySQL
 var serverVersion = ServerVersion.AutoDetect(connectionString);
 
-// 3. Registrar tu DbContext de forma global
-builder.Services.AddDbContext<DbContruContext>(options =>
-    options.UseMySql(connectionString, serverVersion));
+
 
 
 
