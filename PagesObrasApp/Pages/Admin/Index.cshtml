@@ -1,14 +1,351 @@
-﻿
-
-@page
+﻿@page
 @model PagesObrasApp.Pages.Admin.IndexModel
+@using System.Globalization
+@using System.Linq
 @{
-    // Aquí le dices a Razor que use el menú grande de Admin
     Layout = "_AdminLayout";
     ViewData["Title"] = "Panel Admin";
+
+    // --- Datos de muestra (mock) — reemplazar por Model.* cuando conectemos la API vía DTOs ---
+    var obrasActivas = new[]
+    {
+        new { Codigo = "OB-2026-014", Nombre = "Edificio Las Acacias", Cliente = "Inmobiliaria Sur S.A.", Estado = "En Progreso", Avance = 62, Inicio = new DateTime(2026,2,10) },
+        new { Codigo = "OB-2026-019", Nombre = "Casa Familia Pérez", Cliente = "Marcos Pérez", Estado = "Planificada", Avance = 0, Inicio = new DateTime(2026,7,1) },
+        new { Codigo = "OB-2026-011", Nombre = "Galpón Industrial Ruta 5", Cliente = "Logística del Este", Estado = "En Progreso", Avance = 38, Inicio = new DateTime(2026,4,22) },
+        new { Codigo = "OB-2025-087", Nombre = "Reforma Local Comercial", Cliente = "Comercial Andina", Estado = "Pausada", Avance = 45, Inicio = new DateTime(2026,1,15) },
+    };
+
+    var stats = new
+    {
+        ObrasActivas = obrasActivas.Count(o => o.Estado == "En Progreso"),
+        EmpleadosHoy = 14,
+        HerramientasReparacion = 3
+    };
+
+    var fechaHoy = DateTime.Now.ToString("dddd, d 'de' MMMM 'de' yyyy", new CultureInfo("es-ES"));
 }
 
-<div class="card shadow-sm p-4 bg-white rounded">
-    <h2>¡Logro desbloqueado! 🚀</h2>
-    <p class="text-muted">Bienvenido al panel de administración. Desde aquí podrás gestionar toda la constructora.</p>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<div class="admin-dashboard">
+
+    <!-- HERO / Franja de estado -->
+    <section class="bp-hero">
+        <div class="bp-hero-grid"></div>
+        <div class="bp-hero-content">
+            <div>
+                <span class="bp-eyebrow">Panel de control</span>
+                <h1 class="bp-title">Bienvenido, Administrador</h1>
+                <p class="bp-date">@fechaHoy</p>
+            </div>
+            <div class="bp-stats">
+                <div class="bp-stat">
+                    <span class="bp-stat-num">@stats.ObrasActivas</span>
+                    <span class="bp-stat-label">Obras en progreso</span>
+                </div>
+                <div class="bp-stat">
+                    <span class="bp-stat-num">@stats.EmpleadosHoy</span>
+                    <span class="bp-stat-label">Empleados asignados hoy</span>
+                </div>
+                <div class="bp-stat bp-stat-alert">
+                    <span class="bp-stat-num">@stats.HerramientasReparacion</span>
+                    <span class="bp-stat-label">Herramientas en reparación</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ACCESOS RÁPIDOS -->
+    <section class="bp-section">
+        <span class="bp-eyebrow">Accesos rápidos</span>
+        <div class="row g-3 mt-1">
+
+            <div class="col-6 col-md-4">
+                <a href="/Admin/Obras" class="bp-card">
+                    <svg viewBox="0 0 24 24" class="bp-icon"><path d="M7 21h6M7 21V5m0 0l10 4M7 5L4 6.5M17 9v6m-3-2l3 2 3-2" /></svg>
+                    <span class="bp-card-title">Obras</span>
+                    <span class="bp-card-desc">Gestionar proyectos en curso</span>
+                </a>
+            </div>
+
+            <div class="col-6 col-md-4">
+                <a href="/Admin/Herramientas" class="bp-card">
+                    <svg viewBox="0 0 24 24" class="bp-icon"><path d="M14.7 6.3a4 4 0 10-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 005.4-5.4l-2.1 2.1-2-2 2.1-2.1z" /></svg>
+                    <span class="bp-card-title">Herramientas</span>
+                    <span class="bp-card-desc">Inventario y asignación</span>
+                </a>
+            </div>
+
+            <div class="col-6 col-md-4">
+                <a href="/Admin/Materiales" class="bp-card">
+                    <svg viewBox="0 0 24 24" class="bp-icon"><rect x="3" y="4" width="8" height="5" /><rect x="13" y="4" width="8" height="5" /><rect x="3" y="11" width="8" height="5" /><rect x="13" y="11" width="8" height="5" /></svg>
+                    <span class="bp-card-title">Materiales</span>
+                    <span class="bp-card-desc">Stock y consumo por obra</span>
+                </a>
+            </div>
+
+            <div class="col-6 col-md-4">
+                <a href="/Admin/Empleados" class="bp-card">
+                    <svg viewBox="0 0 24 24" class="bp-icon"><circle cx="8" cy="7" r="3" /><path d="M3 20c0-3 2-5 5-5s5 2 5 5" /><circle cx="17" cy="8" r="2.3" /><path d="M14.2 20c.3-2.3 1.7-4 3.8-4s3.4 1.3 3.7 3.4" /></svg>
+                    <span class="bp-card-title">Empleados</span>
+                    <span class="bp-card-desc">Equipo y asignación a obra</span>
+                </a>
+            </div>
+
+            <div class="col-6 col-md-4">
+                <a href="/Admin/Presupuestos" class="bp-card">
+                    <svg viewBox="0 0 24 24" class="bp-icon"><rect x="5" y="4" width="14" height="17" rx="1" /><path d="M9 2h6v3H9zM8 11h8M8 15h5" /></svg>
+                    <span class="bp-card-title">Presupuestos</span>
+                    <span class="bp-card-desc">Emitir y revisar montos</span>
+                </a>
+            </div>
+
+            <div class="col-6 col-md-4">
+                <a href="/Admin/Novedades" class="bp-card">
+                    <svg viewBox="0 0 24 24" class="bp-icon"><path d="M12 3l10 18H2L12 3z" /><path d="M12 9v5M12 17h.01" /></svg>
+                    <span class="bp-card-title">Novedades</span>
+                    <span class="bp-card-desc">Incidencias reportadas</span>
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- OBRAS ACTIVAS -->
+    <section class="bp-section">
+        <div class="d-flex justify-content-between align-items-end">
+            <span class="bp-eyebrow">Obras activas</span>
+            <a href="/Admin/Obras" class="bp-link">Ver todas →</a>
+        </div>
+
+        <div class="bp-table-wrap mt-2">
+            <table class="bp-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Obra</th>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                        <th>Avance</th>
+                        <th>Inicio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var obra in obrasActivas)
+                    {
+                        <tr>
+                            <td class="bp-mono">@obra.Codigo</td>
+                            <td class="bp-strong">@obra.Nombre</td>
+                            <td>@obra.Cliente</td>
+                            <td>
+                                <span class="bp-badge bp-badge-@obra.Estado.Replace(" ", "").ToLower()">@obra.Estado</span>
+                            </td>
+                            <td>
+                                <div class="bp-progress">
+                                    <div class="bp-progress-fill" style="width:@(obra.Avance)%"></div>
+                                </div>
+                                <span class="bp-mono bp-progress-num">@obra.Avance%</span>
+                            </td>
+                            <td class="bp-mono">@obra.Inicio.ToString("dd/MM/yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
 </div>
+
+<style>
+    .admin-dashboard {
+        --bp-blueprint: #1B3A5C;
+        --bp-blueprint-light: #2D5C8C;
+        --bp-concrete: #F1EFEA;
+        --bp-steel: #5B6670;
+        --bp-safety: #F2A900;
+        --bp-ink: #181B1F;
+        --bp-line: #D8D3C8;
+        --bp-progreso: #2D6CDF;
+        --bp-pausada: #F2A900;
+        --bp-finalizada: #2E7D52;
+        --bp-cancelada: #B23A2E;
+        --bp-planificada: #5B6670;
+        font-family: 'Inter', sans-serif;
+        color: var(--bp-ink);
+    }
+
+    .admin-dashboard .bp-eyebrow {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+    }
+
+    /* --- Hero --- */
+    .bp-hero {
+        position: relative;
+        background: var(--bp-blueprint);
+        color: #fff;
+        border-radius: 10px;
+        padding: 2rem 2rem;
+        overflow: hidden;
+        margin-bottom: 2.5rem;
+    }
+    .bp-hero-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+            repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 32px),
+            repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 32px);
+        pointer-events: none;
+    }
+    .bp-hero-content {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 1.5rem;
+    }
+    .bp-hero .bp-eyebrow { color: rgba(255,255,255,0.65); }
+    .bp-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 600;
+        font-size: 2.2rem;
+        margin: 0.2rem 0 0.1rem;
+        letter-spacing: 0.01em;
+    }
+    .bp-date {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.6);
+        text-transform: capitalize;
+        margin: 0;
+    }
+    .bp-stats { display: flex; gap: 1.75rem; }
+    .bp-stat { display: flex; flex-direction: column; align-items: flex-end; }
+    .bp-stat-num {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 2rem;
+        font-weight: 500;
+        line-height: 1;
+    }
+    .bp-stat-alert .bp-stat-num { color: var(--bp-safety); }
+    .bp-stat-label {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.6);
+        max-width: 110px;
+        text-align: right;
+    }
+
+    /* --- Secciones --- */
+    .bp-section { margin-bottom: 2.5rem; }
+
+    /* --- Tarjetas de acceso (con marcas de registro) --- */
+    .bp-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        padding: 1.25rem 1.1rem;
+        text-decoration: none;
+        color: var(--bp-ink);
+        height: 100%;
+        transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .bp-card:hover {
+        border-color: var(--bp-blueprint-light);
+        box-shadow: 0 4px 14px rgba(27,58,92,0.1);
+        color: var(--bp-ink);
+    }
+    .bp-card::before, .bp-card::after {
+        content: "";
+        position: absolute;
+        width: 12px; height: 12px;
+        transition: all .2s ease;
+    }
+    .bp-card::before { top: 7px; left: 7px; border-top: 2px solid var(--bp-blueprint); border-left: 2px solid var(--bp-blueprint); }
+    .bp-card::after  { bottom: 7px; right: 7px; border-bottom: 2px solid var(--bp-blueprint); border-right: 2px solid var(--bp-blueprint); }
+    .bp-card:hover::before, .bp-card:hover::after {
+        width: 18px; height: 18px;
+        border-color: var(--bp-safety);
+    }
+    .bp-icon {
+        width: 26px; height: 26px;
+        fill: none;
+        stroke: var(--bp-blueprint);
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        margin-bottom: 0.25rem;
+    }
+    .bp-card-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 600;
+        font-size: 1.15rem;
+        letter-spacing: 0.01em;
+    }
+    .bp-card-desc { font-size: 0.8rem; color: var(--bp-steel); }
+
+    /* --- Tabla de obras --- */
+    .bp-link { font-size: 0.85rem; color: var(--bp-blueprint); text-decoration: none; font-weight: 500; }
+    .bp-link:hover { color: var(--bp-safety); }
+
+    .bp-table-wrap { background: #fff; border: 1px solid var(--bp-line); border-radius: 8px; overflow: hidden; }
+    .bp-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .bp-table thead th {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+        text-align: left;
+        padding: 0.75rem 1rem;
+        background: var(--bp-concrete);
+        border-bottom: 1px solid var(--bp-line);
+    }
+    .bp-table tbody td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--bp-line);
+        vertical-align: middle;
+    }
+    .bp-table tbody tr:last-child td { border-bottom: none; }
+    .bp-mono { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--bp-steel); }
+    .bp-strong { font-weight: 600; }
+
+    .bp-badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 0.2rem 0.6rem;
+        border-radius: 100px;
+        color: #fff;
+    }
+    .bp-badge-enprogreso  { background: var(--bp-progreso); }
+    .bp-badge-pausada     { background: var(--bp-pausada); color: var(--bp-ink); }
+    .bp-badge-finalizada  { background: var(--bp-finalizada); }
+    .bp-badge-cancelada   { background: var(--bp-cancelada); }
+    .bp-badge-planificada { background: var(--bp-planificada); }
+
+    .bp-progress {
+        display: inline-block;
+        width: 90px;
+        height: 6px;
+        background: var(--bp-concrete);
+        border-radius: 4px;
+        overflow: hidden;
+        vertical-align: middle;
+        margin-right: 0.4rem;
+    }
+    .bp-progress-fill { height: 100%; background: var(--bp-blueprint-light); }
+    .bp-progress-num { vertical-align: middle; }
+
+    @@media (max-width: 576px) {
+        .bp-hero-content { flex-direction: column; align-items: flex-start; }
+        .bp-stats { gap: 1.1rem; }
+    }
+</style>
