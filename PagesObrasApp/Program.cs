@@ -1,38 +1,44 @@
-using Microsoft.EntityFrameworkCore;
-
-
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Leer la cadena de conexión del appsettings.json
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-// 2. Definir la versión exacta de tu servidor MySQL
-var serverVersion = ServerVersion.AutoDetect(connectionString);
-
-
-
-
-
-// Add services to the container.
+// ==================== AGREGAR SERVICIOS ====================
 builder.Services.AddRazorPages();
 
+// Configurar HttpClient para la API
+builder.Services.AddHttpClient("API", client =>
+{
+    var apiUrl = builder.Configuration["ApiBaseUrl"];
+    client.BaseAddress = new Uri(apiUrl ?? "https://localhost:7000/");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
+// Configurar sesiones
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
+builder.Services.AddHttpContextAccessor();
+
+// ==================== CONSTRUIR APP ====================
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ==================== CONFIGURAR PIPELINE ====================
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
+app.UseSession();      // ¡Importante! Debe ir después de UseRouting()
 app.UseAuthorization();
 
 app.MapRazorPages();
 
+// ==================== EJECUTAR ====================
 app.Run();
