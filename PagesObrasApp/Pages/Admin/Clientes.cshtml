@@ -1,0 +1,779 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.ClientesModel
+@using System.Linq
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Clientes";
+
+    // --- Datos de muestra (mock) — reemplazar por Model.* cuando conectemos la API vía DTOs ---
+    var clientes = new[]
+    {
+        new { Id=1, Nombre="Inmobiliaria Sur S.A.",  Tel="02 900 1122", Email="contacto@inmsur.com.uy",     Direccion="Av. 18 de Julio 1234, Montevideo"    },
+        new { Id=2, Nombre="Marcos Pérez",            Tel="099 234 567", Email="marcos.perez@gmail.com",     Direccion="Calle Artigas 456, Paysandú"          },
+        new { Id=3, Nombre="Logística del Este",      Tel="02 508 7788", Email="admin@logeste.uy",           Direccion="Ruta 8 km 12, Melo"                   },
+        new { Id=4, Nombre="Comercial Andina",        Tel="098 445 001", Email="andina@comercial.com.uy",    Direccion="Bulevar Artigas 890, Montevideo"       },
+        new { Id=5, Nombre="Lucía Fernández",         Tel="091 667 334", Email="lufer@hotmail.com",          Direccion="Calle Rivera 21, Colonia"              },
+        new { Id=6, Nombre="Distribuidora Ferpal",    Tel="02 401 5566", Email="ferpal@distribuidora.uy",    Direccion="Camino Maldonado 3300, Montevideo"     },
+        new { Id=7, Nombre="Grupo Sabores",           Tel="094 112 998", Email="info@gruposabores.com.uy",   Direccion="Rambla República Argentina 500, Colonia"},
+    };
+
+    var obras = new[]
+    {
+        new { IdCliente=1, Codigo="OB-2026-014", Nombre="Edificio Las Acacias",    Estado="En Progreso" },
+        new { IdCliente=1, Codigo="OB-2026-002", Nombre="Torre Mirador",           Estado="En Progreso" },
+        new { IdCliente=2, Codigo="OB-2026-019", Nombre="Casa Familia Pérez",      Estado="Planificada" },
+        new { IdCliente=3, Codigo="OB-2026-011", Nombre="Galpón Industrial Ruta 5",Estado="En Progreso" },
+        new { IdCliente=4, Codigo="OB-2025-087", Nombre="Reforma Local Comercial", Estado="Pausada"     },
+        new { IdCliente=5, Codigo="OB-2025-072", Nombre="Vivienda Costa Azul",     Estado="Finalizada"  },
+        new { IdCliente=6, Codigo="OB-2025-061", Nombre="Ampliación Depósito Norte",Estado="Cancelada"  },
+        new { IdCliente=7, Codigo="OB-2026-021", Nombre="Local Gastronómico Plaza",Estado="Planificada" },
+    };
+
+    var vista = clientes.Select(c => new
+    {
+        c.Id,
+        c.Nombre,
+        c.Tel,
+        c.Email,
+        c.Direccion,
+        NombreLow = c.Nombre.ToLower(),
+        EmailLow = c.Email.ToLower(),
+        Obras = obras.Where(o => o.IdCliente == c.Id).ToList(),
+        TotalObras = obras.Count(o => o.IdCliente == c.Id),
+        ObrasActivas = obras.Count(o => o.IdCliente == c.Id && o.Estado == "En Progreso"),
+    }).OrderByDescending(c => c.TotalObras).ToList();
+
+    var totalClientes = clientes.Length;
+    var totalConObras = vista.Count(c => c.TotalObras > 0);
+    var totalActivos = vista.Count(c => c.ObrasActivas > 0);
+
+    var estadoColores = new Dictionary<string, string>
+    {
+        {"En Progreso", "enprogreso"}, {"Planificada", "planificada"},
+        {"Pausada",     "pausada"},    {"Finalizada",  "finalizada"},
+        {"Cancelada",   "cancelada"},
+    };
+}
+
+<div class="admin-dashboard">
+
+    <!-- HEADER -->
+    <section class="bp-section">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-2">
+            <div>
+                <span class="bp-eyebrow">Gestión comercial</span>
+                <h1 class="bp-title bp-title-dark">Clientes</h1>
+            </div>
+            <button type="button" class="bp-btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
+                + Nuevo cliente
+            </button>
+        </div>
+    </section>
+
+    <!-- STAT CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="bp-stat-card">
+                <span class="bp-stat-label">Total clientes</span>
+                <span class="bp-stat-num">@totalClientes</span>
+                <span class="bp-stat-sub">registrados</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="bp-stat-card bp-stat-card--accent">
+                <span class="bp-stat-label">Con obras activas</span>
+                <span class="bp-stat-num bp-stat-num--amber">@totalActivos</span>
+                <span class="bp-stat-sub">en progreso ahora</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="bp-stat-card">
+                <span class="bp-stat-label">Con alguna obra</span>
+                <span class="bp-stat-num">@totalConObras</span>
+                <span class="bp-stat-sub">de @totalClientes clientes</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="bp-filterbar mb-3">
+        <input type="text" id="bpSearch" class="bp-input" placeholder="Buscar por nombre, email o dirección...">
+        <select id="bpFiltroObras" class="bp-select">
+            <option value="">Todos</option>
+            <option value="activo">Con obra activa</option>
+            <option value="sinobra">Sin obras</option>
+        </select>
+    </div>
+
+    <!-- CARDS DE CLIENTE -->
+    <div class="row g-3" id="bpCards">
+        @foreach (var c in vista)
+        {
+            var filtroVal = c.ObrasActivas > 0 ? "activo" : c.TotalObras == 0 ? "sinobra" : "conobrasinactiva";
+            <div class="col-12 col-md-6 col-xl-4 bp-card-wrap"
+                 data-search="@($"{c.NombreLow} {c.EmailLow} {c.Direccion.ToLower()}")"
+                 data-filtro="@filtroVal">
+
+                <div class="bp-cliente-card @(c.ObrasActivas > 0 ? "bp-cliente-card--activo" : "")">
+
+                    <!-- Encabezado -->
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div class="bp-cliente-avatar">
+                            @c.Nombre.Substring(0, 1).ToUpper()
+                        </div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="bp-cliente-nombre">@c.Nombre</div>
+                            <div class="bp-mono bp-steel bp-id">ID #@c.Id.ToString("D4")</div>
+                        </div>
+                        <button class="bp-action-btn"
+                                title="Editar"
+                                onclick="abrirEditar(@c.Id,'@c.Nombre.Replace("'", "\\'")','@c.Tel','@c.Email','@c.Direccion.Replace("'", "\\'")')">
+                            ✏
+                        </button>
+                    </div>
+
+                    <!-- Datos de contacto -->
+                    <div class="bp-contacto-grid">
+                        <div class="bp-contacto-item">
+                            <span class="bp-contacto-label">Teléfono</span>
+                            <a href="tel:@c.Tel.Replace(" ", "")" class="bp-contacto-val bp-tel-link">@c.Tel</a>
+                        </div>
+                        <div class="bp-contacto-item">
+                            <span class="bp-contacto-label">Email</span>
+                            <a href="mailto:@c.Email" class="bp-contacto-val bp-email-link" title="@c.Email">@c.Email</a>
+                        </div>
+                        <div class="bp-contacto-item bp-contacto-full">
+                            <span class="bp-contacto-label">Dirección</span>
+                            <span class="bp-contacto-val">@c.Direccion</span>
+                        </div>
+                    </div>
+
+                    <!-- Obras -->
+                    <div class="bp-obras-section">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="bp-obras-label">
+                                @c.TotalObras @(c.TotalObras == 1 ? "obra" : "obras")
+                            </span>
+                            @if (c.ObrasActivas > 0)
+                            {
+                                <span class="bp-activo-dot">
+                                    <span class="bp-dot-pulse"></span>@c.ObrasActivas activa@(c.ObrasActivas > 1 ? "s" : "")
+                                </span>
+                            }
+                        </div>
+
+                        @if (c.Obras.Any())
+                        {
+                            <div class="bp-obras-list">
+                                @foreach (var o in c.Obras)
+                                {
+                                    var cls = estadoColores.ContainsKey(o.Estado) ? estadoColores[o.Estado] : "planificada";
+                                    <div class="bp-obra-row">
+                                        <span class="bp-obra-dot bp-obra-dot--@cls"></span>
+                                        <span class="bp-obra-cod bp-mono">@o.Codigo</span>
+                                        <span class="bp-obra-nom">@o.Nombre</span>
+                                        <span class="bp-badge-mini bp-badge-mini--@cls">@o.Estado</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="bp-sin-obras">Sin obras registradas</p>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        }
+    </div>
+    <p id="bpEmpty" class="bp-empty d-none">No hay clientes que coincidan con la búsqueda.</p>
+    <p class="bp-count mt-2">Mostrando <span id="bpCount">@vista.Count</span> de @vista.Count clientes</p>
+
+</div>
+
+<!-- Modal: Nuevo cliente -->
+<div class="modal fade" id="modalNuevoCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bp-modal">
+            <div class="modal-header bp-modal-header">
+                <div>
+                    <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Alta de cliente</span>
+                    <h5 class="modal-title bp-title">Nuevo cliente</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bp-modal-body">
+                <!-- TODO: conectar a OnPostCrearCliente cuando esté el HttpClient hacia la API -->
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="bp-label">Nombre o razón social</label>
+                        <input type="text" class="bp-input w-100" placeholder="Ej: Inmobiliaria Sur S.A.">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="bp-label">Teléfono</label>
+                        <input type="text" class="bp-input w-100" placeholder="Ej: 099 000 111">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="bp-label">Email</label>
+                        <input type="email" class="bp-input w-100" placeholder="Ej: contacto@empresa.uy">
+                    </div>
+                    <div class="col-12">
+                        <label class="bp-label">Dirección</label>
+                        <input type="text" class="bp-input w-100" placeholder="Ej: Av. Italia 1234, Montevideo">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bp-modal-footer">
+                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="bp-btn-primary">Guardar cliente</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Editar cliente -->
+<div class="modal fade" id="modalEditarCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bp-modal">
+            <div class="modal-header bp-modal-header">
+                <div>
+                    <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Edición de cliente</span>
+                    <h5 class="modal-title bp-title">Editar cliente</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bp-modal-body">
+                <!-- TODO: conectar a OnPostEditarCliente cuando esté el HttpClient hacia la API -->
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="bp-label">Nombre o razón social</label>
+                        <input type="text" id="editNombre" class="bp-input w-100">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="bp-label">Teléfono</label>
+                        <input type="text" id="editTel" class="bp-input w-100">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="bp-label">Email</label>
+                        <input type="email" id="editEmail" class="bp-input w-100">
+                    </div>
+                    <div class="col-12">
+                        <label class="bp-label">Dirección</label>
+                        <input type="text" id="editDir" class="bp-input w-100">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bp-modal-footer">
+                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="bp-btn-primary">Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .admin-dashboard {
+        --bp-blueprint: #1B3A5C;
+        --bp-blueprint-light: #2D5C8C;
+        --bp-concrete: #F1EFEA;
+        --bp-steel: #5B6670;
+        --bp-safety: #F2A900;
+        --bp-ink: #181B1F;
+        --bp-line: #D8D3C8;
+        --bp-ok: #2E7D52;
+        font-family: 'Inter', sans-serif;
+        color: var(--bp-ink);
+    }
+
+        .admin-dashboard .bp-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+        }
+
+    .bp-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        margin: 0.15rem 0;
+    }
+
+    .bp-title-dark {
+        font-size: 2rem;
+        color: var(--bp-ink);
+    }
+
+    .bp-section {
+        margin-bottom: 2rem;
+    }
+
+    .bp-mono {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.82rem;
+    }
+
+    .bp-steel {
+        color: var(--bp-steel);
+    }
+
+    /* Botones */
+    .bp-btn-primary {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 0.88rem;
+        background: var(--bp-safety);
+        color: var(--bp-ink);
+        border: none;
+        border-radius: 6px;
+        padding: 0.55rem 1.1rem;
+        transition: background .2s;
+    }
+
+        .bp-btn-primary:hover {
+            background: #d99500;
+        }
+
+    .bp-btn-ghost {
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 0.88rem;
+        background: transparent;
+        color: var(--bp-steel);
+        border: 1px solid var(--bp-line);
+        border-radius: 6px;
+        padding: 0.55rem 1.1rem;
+    }
+
+        .bp-btn-ghost:hover {
+            border-color: var(--bp-steel);
+            color: var(--bp-ink);
+        }
+
+    .bp-action-btn {
+        background: none;
+        border: 1px solid var(--bp-line);
+        border-radius: 5px;
+        padding: 0.2rem 0.45rem;
+        font-size: 0.82rem;
+        cursor: pointer;
+        color: var(--bp-steel);
+        transition: border-color .15s, color .15s;
+        flex-shrink: 0;
+    }
+
+        .bp-action-btn:hover {
+            border-color: var(--bp-blueprint);
+            color: var(--bp-blueprint);
+        }
+
+    /* Stat cards */
+    .bp-stat-card {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        padding: 1rem 1.1rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    .bp-stat-card--accent {
+        border-left: 3px solid var(--bp-safety);
+    }
+
+    .bp-stat-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+    }
+
+    .bp-stat-num {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--bp-ink);
+        line-height: 1.1;
+    }
+
+    .bp-stat-num--amber {
+        color: var(--bp-safety);
+    }
+
+    .bp-stat-sub {
+        font-size: 0.75rem;
+        color: var(--bp-steel);
+    }
+
+    /* Filtros */
+    .bp-filterbar {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .bp-input, .bp-select {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.88rem;
+        border: 1px solid var(--bp-line);
+        border-radius: 6px;
+        padding: 0.5rem 0.8rem;
+        background: #fff;
+        color: var(--bp-ink);
+    }
+
+        .bp-input:focus, .bp-select:focus {
+            outline: none;
+            border-color: var(--bp-blueprint-light);
+            box-shadow: 0 0 0 3px rgba(45,92,140,0.12);
+        }
+
+    #bpSearch {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    /* Cards de cliente */
+    .bp-cliente-card {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 10px;
+        padding: 1.25rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        transition: box-shadow .2s, border-color .2s;
+    }
+
+        .bp-cliente-card:hover {
+            box-shadow: 0 4px 16px rgba(27,58,92,0.09);
+            border-color: #bbb;
+        }
+
+    .bp-cliente-card--activo {
+        border-left: 3px solid var(--bp-ok);
+    }
+
+    /* Avatar inicial */
+    .bp-cliente-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: var(--bp-blueprint);
+        color: #fff;
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 700;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .bp-cliente-nombre {
+        font-weight: 600;
+        font-size: 0.95rem;
+        line-height: 1.3;
+    }
+
+    .bp-id {
+        font-size: 0.72rem;
+        margin-top: 0.1rem;
+    }
+
+    /* Grid de contacto */
+    .bp-contacto-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem 1rem;
+        padding: 0.75rem;
+        background: var(--bp-concrete);
+        border-radius: 6px;
+    }
+
+    .bp-contacto-full {
+        grid-column: 1 / -1;
+    }
+
+    .bp-contacto-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+        display: block;
+        margin-bottom: 0.15rem;
+    }
+
+    .bp-contacto-val {
+        font-size: 0.83rem;
+        display: block;
+        word-break: break-word;
+    }
+
+    .bp-tel-link, .bp-email-link {
+        color: var(--bp-blueprint);
+        text-decoration: none;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.78rem;
+        transition: color .15s;
+    }
+
+        .bp-tel-link:hover, .bp-email-link:hover {
+            color: var(--bp-safety);
+        }
+
+    .bp-email-link {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+        display: block;
+    }
+
+    /* Sección obras */
+    .bp-obras-section {
+        border-top: 1px dashed var(--bp-line);
+        padding-top: 0.75rem;
+    }
+
+    .bp-obras-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+    }
+
+    .bp-activo-dot {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.75rem;
+        color: var(--bp-ok);
+        font-weight: 500;
+    }
+
+    .bp-dot-pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--bp-ok);
+        flex-shrink: 0;
+        animation: bpPulse 1.8s ease-in-out infinite;
+    }
+
+    @@keyframes bpPulse {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(46,125,82,.5);
+        }
+
+        50% {
+            box-shadow: 0 0 0 5px rgba(46,125,82,0);
+        }
+    }
+
+    .bp-obras-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-top: 0.5rem;
+    }
+
+    .bp-obra-row {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.8rem;
+        flex-wrap: wrap;
+    }
+
+    .bp-obra-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .bp-obra-dot--enprogreso {
+        background: #2D6CDF;
+    }
+
+    .bp-obra-dot--planificada {
+        background: var(--bp-steel);
+    }
+
+    .bp-obra-dot--pausada {
+        background: var(--bp-safety);
+    }
+
+    .bp-obra-dot--finalizada {
+        background: var(--bp-ok);
+    }
+
+    .bp-obra-dot--cancelada {
+        background: #B23A2E;
+    }
+
+    .bp-obra-cod {
+        font-size: 0.72rem;
+        color: var(--bp-steel);
+        flex-shrink: 0;
+    }
+
+    .bp-obra-nom {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .bp-badge-mini {
+        font-size: 0.65rem;
+        font-weight: 600;
+        padding: 0.12rem 0.45rem;
+        border-radius: 100px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .bp-badge-mini--enprogreso {
+        background: #E8F0FC;
+        color: #2D6CDF;
+    }
+
+    .bp-badge-mini--planificada {
+        background: #EAECEE;
+        color: var(--bp-steel);
+    }
+
+    .bp-badge-mini--pausada {
+        background: #FFF8E8;
+        color: #92670a;
+    }
+
+    .bp-badge-mini--finalizada {
+        background: #EAF4EE;
+        color: var(--bp-ok);
+    }
+
+    .bp-badge-mini--cancelada {
+        background: #FBF0EF;
+        color: #B23A2E;
+    }
+
+    .bp-sin-obras {
+        font-size: 0.8rem;
+        color: var(--bp-steel);
+        margin: 0.4rem 0 0;
+    }
+
+    .bp-empty {
+        text-align: center;
+        padding: 3rem;
+        color: var(--bp-steel);
+    }
+
+    .bp-count {
+        font-size: 0.8rem;
+        color: var(--bp-steel);
+    }
+
+    /* Modal */
+    .bp-modal {
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .bp-modal-header {
+        background: var(--bp-blueprint);
+        border: none;
+        padding: 1.25rem 1.5rem;
+    }
+
+        .bp-modal-header .bp-title {
+            color: #fff;
+            font-size: 1.4rem;
+        }
+
+    .bp-modal-body {
+        padding: 1.5rem;
+        background: var(--bp-concrete);
+    }
+
+    .bp-modal-footer {
+        border-top: 1px solid var(--bp-line);
+        padding: 1rem 1.5rem;
+    }
+
+    .bp-label {
+        display: block;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+        margin-bottom: 0.3rem;
+    }
+
+    @@media (max-width: 576px) {
+        .bp-filterbar {
+            flex-direction: column;
+        }
+
+        .bp-contacto-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .bp-contacto-full {
+            grid-column: unset;
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        const search   = document.getElementById('bpSearch');
+        const filtro   = document.getElementById('bpFiltroObras');
+        const cards    = Array.from(document.querySelectorAll('.bp-card-wrap'));
+        const empty    = document.getElementById('bpEmpty');
+        const count    = document.getElementById('bpCount');
+
+        function aplicarFiltros() {
+            const txt = search.value.trim().toLowerCase();
+            const fil = filtro.value;
+            let vis = 0;
+
+            cards.forEach(card => {
+                const coincideTexto  = !txt || card.dataset.search.includes(txt);
+                const coincideFiltro = !fil || card.dataset.filtro === fil;
+                const ok = coincideTexto && coincideFiltro;
+                card.style.display = ok ? '' : 'none';
+                if (ok) vis++;
+            });
+
+            count.textContent = vis;
+            empty.classList.toggle('d-none', vis > 0);
+        }
+
+        search.addEventListener('input', aplicarFiltros);
+        filtro.addEventListener('change', aplicarFiltros);
+
+        // Pre-cargar modal edición
+        window.abrirEditar = function(id, nombre, tel, email, dir) {
+            document.getElementById('editNombre').value = nombre;
+            document.getElementById('editTel').value    = tel;
+            document.getElementById('editEmail').value  = email;
+            document.getElementById('editDir').value    = dir;
+            new bootstrap.Modal(document.getElementById('modalEditarCliente')).show();
+        };
+    })();
+</script>
