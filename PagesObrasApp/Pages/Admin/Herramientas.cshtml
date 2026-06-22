@@ -1,4 +1,580 @@
 ﻿@page
 @model PagesObrasApp.Pages.Admin.HerramientasModel
+@using System.Linq
 @{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Herramientas";
+
+    // --- Datos de muestra (mock) — reemplazar por Model.Herramientas cuando conectemos la API vía DTOs ---
+    var herramientas = new[]
+    {
+        new { Codigo = "HER-0091", Tipo = "Taladro Percutor", Estado = "Asignada", Origen = "Propia", Obra = "Edificio Las Acacias", FechaSalida = (DateTime?)new DateTime(2026,5,12) },
+        new { Codigo = "HER-0092", Tipo = "Taladro Percutor", Estado = "Asignada", Origen = "Propia", Obra = "Torre Mirador", FechaSalida = (DateTime?)new DateTime(2026,6,1) },
+        new { Codigo = "HER-0093", Tipo = "Taladro Percutor", Estado = "En Depósito", Origen = "Propia", Obra = (string)null, FechaSalida = (DateTime?)null },
+        new { Codigo = "HER-0044", Tipo = "Amoladora Angular", Estado = "Asignada", Origen = "Propia", Obra = "Galpón Industrial Ruta 5", FechaSalida = (DateTime?)new DateTime(2026,4,25) },
+        new { Codigo = "HER-0045", Tipo = "Amoladora Angular", Estado = "En Reparación", Origen = "Propia", Obra = (string)null, FechaSalida = (DateTime?)null },
+        new { Codigo = "HER-0210", Tipo = "Andamio Modular (tramo)", Estado = "Asignada", Origen = "Alquilada", Obra = "Edificio Las Acacias", FechaSalida = (DateTime?)new DateTime(2026,5,20) },
+        new { Codigo = "HER-0211", Tipo = "Andamio Modular (tramo)", Estado = "Asignada", Origen = "Alquilada", Obra = "Edificio Las Acacias", FechaSalida = (DateTime?)new DateTime(2026,5,20) },
+        new { Codigo = "HER-0033", Tipo = "Hormigonera 150L", Estado = "En Depósito", Origen = "Propia", Obra = (string)null, FechaSalida = (DateTime?)null },
+        new { Codigo = "HER-0078", Tipo = "Soldadora Inverter", Estado = "Asignada", Origen = "Alquilada", Obra = "Galpón Industrial Ruta 5", FechaSalida = (DateTime?)new DateTime(2026,6,3) },
+        new { Codigo = "HER-0015", Tipo = "Nivel Láser", Estado = "En Depósito", Origen = "Propia", Obra = (string)null, FechaSalida = (DateTime?)null },
+    };
+
+    var resumenTipos = herramientas
+        .GroupBy(h => h.Tipo)
+        .Select(g => new
+        {
+            Tipo = g.Key,
+            Total = g.Count(),
+            EnDeposito = g.Count(h => h.Estado == "En Depósito"),
+            EnReparacion = g.Count(h => h.Estado == "En Reparación"),
+            PorObra = g.Where(h => h.Estado == "Asignada")
+                       .GroupBy(h => h.Obra)
+                       .Select(go => new { Obra = go.Key, Cantidad = go.Count() })
+                       .OrderByDescending(x => x.Cantidad)
+                       .ToList()
+        })
+        .OrderByDescending(t => t.Total)
+        .ToList();
+
+    var obrasMock = new[] { "Edificio Las Acacias", "Casa Familia Pérez", "Galpón Industrial Ruta 5", "Reforma Local Comercial", "Torre Mirador" };
 }
+
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<div class="admin-dashboard">
+
+    <section class="bp-section">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-2">
+            <div>
+                <span class="bp-eyebrow">Inventario</span>
+                <h1 class="bp-title bp-title-dark">Herramientas</h1>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="bp-btn-ghost" data-bs-toggle="modal" data-bs-target="#modalAsignar">Asignar a obra</button>
+                <button type="button" class="bp-btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaHerramienta">+ Nueva herramienta</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- RESUMEN POR TIPO -->
+    <section class="bp-section">
+        <span class="bp-eyebrow">Resumen por tipo</span>
+        <div class="row g-3 mt-1">
+            @foreach (var t in resumenTipos)
+            {
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="bp-resumen-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <span class="bp-resumen-tipo">@t.Tipo</span>
+                            <span class="bp-resumen-total">@t.Total</span>
+                        </div>
+
+                        @if (t.PorObra.Any())
+                        {
+                            <div class="bp-chip-row">
+                                @foreach (var po in t.PorObra)
+                                {
+                                    <span class="bp-chip">@po.Obra <strong>×@po.Cantidad</strong></span>
+                                }
+                            </div>
+                        }
+
+                        <div class="bp-resumen-foot">
+                            <span>@t.EnDeposito en depósito</span>
+                            @if (t.EnReparacion > 0)
+                            {
+                                <span class="bp-resumen-alert">@t.EnReparacion en reparación</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- LISTADO INDIVIDUAL -->
+    <section class="bp-section">
+        <span class="bp-eyebrow">Listado individual</span>
+
+        <div class="bp-filterbar">
+            <input type="text" id="bpSearch" class="bp-input" placeholder="Buscar por código o tipo...">
+            <select id="bpFiltroEstado" class="bp-select">
+                <option value="">Todos los estados</option>
+                <option value="En Depósito">En Depósito</option>
+                <option value="Asignada">Asignada</option>
+                <option value="En Reparación">En Reparación</option>
+            </select>
+            <select id="bpFiltroOrigen" class="bp-select">
+                <option value="">Propia y alquilada</option>
+                <option value="Propia">Propia</option>
+                <option value="Alquilada">Alquilada</option>
+            </select>
+        </div>
+
+        <div class="bp-table-wrap mt-2">
+            <table class="bp-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Origen</th>
+                        <th>Obra actual</th>
+                        <th>Fecha salida</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="bpTbody">
+                    @foreach (var h in herramientas)
+                    {
+                        <tr data-estado="@h.Estado" data-origen="@h.Origen" data-search="@($"{h.Codigo} {h.Tipo}".ToLower())">
+                            <td class="bp-mono">@h.Codigo</td>
+                            <td class="bp-strong">@h.Tipo</td>
+                            <td><span class="bp-badge bp-badge-@h.Estado.Replace(" ", "").Replace("ó", "o").ToLower()">@h.Estado</span></td>
+                            <td>
+                                <span class="bp-tag bp-tag-@h.Origen.ToLower()">
+                                    @h.Origen
+                                    @if (h.Origen == "Alquilada")
+                                    {
+                                        <text>&nbsp;$</text>
+                                    }
+                                </span>
+                            </td>
+                            <td>@(h.Obra ?? "—")</td>
+                            <td class="bp-mono">@(h.FechaSalida?.ToString("dd/MM/yyyy") ?? "—")</td>
+                            <td class="text-end"><a href="#" class="bp-link">Ver →</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <p id="bpEmpty" class="bp-empty d-none">No se encontraron herramientas con esos filtros.</p>
+        </div>
+    </section>
+
+</div>
+
+<!-- Modal: Asignar a obra -->
+<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bp-modal">
+            <div class="modal-header bp-modal-header">
+                <div>
+                    <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Movimiento de inventario</span>
+                    <h5 class="modal-title bp-title">Asignar herramienta a obra</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bp-modal-body">
+                <!-- TODO: conectar a OnPostAsignar cuando esté el HttpClient hacia la API -->
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="bp-label">Herramienta (en depósito)</label>
+                        <select class="bp-select w-100">
+                            <option value="">Seleccionar herramienta...</option>
+                            @foreach (var h in herramientas.Where(x => x.Estado == "En Depósito"))
+                            {
+                                <option value="@h.Codigo">@h.Codigo — @h.Tipo</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="bp-label">Obra de destino</label>
+                        <select class="bp-select w-100">
+                            <option value="">Seleccionar obra...</option>
+                            @foreach (var o in obrasMock)
+                            {
+                                <option value="@o">@o</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="bp-label">Fecha de salida</label>
+                        <input type="date" class="bp-input w-100">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bp-modal-footer">
+                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="bp-btn-primary">Confirmar asignación</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Nueva herramienta -->
+<div class="modal fade" id="modalNuevaHerramienta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bp-modal">
+            <div class="modal-header bp-modal-header">
+                <div>
+                    <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Alta de inventario</span>
+                    <h5 class="modal-title bp-title">Nueva herramienta</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bp-modal-body">
+                <!-- TODO: conectar a OnPostCrearHerramienta cuando esté el HttpClient hacia la API -->
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="bp-label">Tipo de herramienta</label>
+                        <input type="text" class="bp-input w-100" placeholder="Ej: Taladro Percutor">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="bp-label">Código de inventario</label>
+                        <input type="text" class="bp-input w-100" placeholder="Ej: HER-0094">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="bp-label">Origen</label>
+                        <select class="bp-select w-100">
+                            <option selected>Propia</option>
+                            <option>Alquilada</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bp-modal-footer">
+                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="bp-btn-primary">Guardar herramienta</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .admin-dashboard {
+        --bp-blueprint: #1B3A5C;
+        --bp-blueprint-light: #2D5C8C;
+        --bp-concrete: #F1EFEA;
+        --bp-steel: #5B6670;
+        --bp-safety: #F2A900;
+        --bp-ink: #181B1F;
+        --bp-line: #D8D3C8;
+        font-family: 'Inter', sans-serif;
+        color: var(--bp-ink);
+    }
+
+        .admin-dashboard .bp-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+        }
+
+    .bp-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        margin: 0.15rem 0;
+    }
+
+    .bp-title-dark {
+        font-size: 2rem;
+        color: var(--bp-ink);
+    }
+
+    .bp-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .bp-btn-primary {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 0.88rem;
+        background: var(--bp-safety);
+        color: var(--bp-ink);
+        border: none;
+        border-radius: 6px;
+        padding: 0.55rem 1.1rem;
+        transition: background .2s ease;
+    }
+
+        .bp-btn-primary:hover {
+            background: #d99500;
+            color: var(--bp-ink);
+        }
+
+    .bp-btn-ghost {
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 0.88rem;
+        background: transparent;
+        color: var(--bp-steel);
+        border: 1px solid var(--bp-line);
+        border-radius: 6px;
+        padding: 0.55rem 1.1rem;
+    }
+
+        .bp-btn-ghost:hover {
+            border-color: var(--bp-steel);
+            color: var(--bp-ink);
+        }
+
+    /* Resumen por tipo */
+    .bp-resumen-card {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        padding: 1rem 1.1rem;
+        height: 100%;
+    }
+
+    .bp-resumen-tipo {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 600;
+        font-size: 1.05rem;
+    }
+
+    .bp-resumen-total {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.4rem;
+        color: var(--bp-blueprint);
+    }
+
+    .bp-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-top: 0.7rem;
+    }
+
+    .bp-chip {
+        font-size: 0.74rem;
+        background: var(--bp-concrete);
+        color: var(--bp-ink);
+        border-radius: 100px;
+        padding: 0.2rem 0.6rem;
+    }
+
+        .bp-chip strong {
+            color: var(--bp-blueprint);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+    .bp-resumen-foot {
+        margin-top: 0.8rem;
+        padding-top: 0.6rem;
+        border-top: 1px dashed var(--bp-line);
+        font-size: 0.74rem;
+        color: var(--bp-steel);
+        display: flex;
+        gap: 0.9rem;
+    }
+
+    .bp-resumen-alert {
+        color: var(--bp-safety);
+        font-weight: 600;
+    }
+
+    /* Filtros */
+    .bp-filterbar {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin: 1rem 0 0.5rem;
+    }
+
+    .bp-input, .bp-select {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.88rem;
+        border: 1px solid var(--bp-line);
+        border-radius: 6px;
+        padding: 0.5rem 0.8rem;
+        background: #fff;
+        color: var(--bp-ink);
+    }
+
+        .bp-input:focus, .bp-select:focus {
+            outline: none;
+            border-color: var(--bp-blueprint-light);
+            box-shadow: 0 0 0 3px rgba(45,92,140,0.12);
+        }
+
+    #bpSearch {
+        flex: 1;
+        min-width: 220px;
+    }
+
+    /* Tabla */
+    .bp-table-wrap {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .bp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+
+        .bp-table thead th {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background: var(--bp-concrete);
+            border-bottom: 1px solid var(--bp-line);
+        }
+
+        .bp-table tbody td {
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--bp-line);
+            vertical-align: middle;
+        }
+
+        .bp-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+    .bp-mono {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.82rem;
+        color: var(--bp-steel);
+    }
+
+    .bp-strong {
+        font-weight: 600;
+    }
+
+    .bp-link {
+        font-size: 0.85rem;
+        color: var(--bp-blueprint);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+        .bp-link:hover {
+            color: var(--bp-safety);
+        }
+
+    .bp-empty {
+        text-align: center;
+        padding: 2rem;
+        color: var(--bp-steel);
+        margin: 0;
+    }
+
+    .bp-badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 0.2rem 0.6rem;
+        border-radius: 100px;
+        color: #fff;
+    }
+
+    .bp-badge-endeposito {
+        background: var(--bp-steel);
+    }
+
+    .bp-badge-asignada {
+        background: var(--bp-blueprint);
+    }
+
+    .bp-badge-enreparacion {
+        background: var(--bp-safety);
+        color: var(--bp-ink);
+    }
+
+    .bp-tag {
+        font-size: 0.74rem;
+        font-weight: 500;
+        padding: 0.18rem 0.55rem;
+        border-radius: 4px;
+        border: 1px solid var(--bp-line);
+        color: var(--bp-steel);
+        display: inline-block;
+    }
+
+    .bp-tag-alquilada {
+        border-color: var(--bp-safety);
+        color: #92670a;
+        background: #fff8e8;
+    }
+
+    .bp-tag-propia {
+        border-color: var(--bp-line);
+    }
+
+    /* Modal */
+    .bp-modal {
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .bp-modal-header {
+        background: var(--bp-blueprint);
+        border: none;
+        padding: 1.25rem 1.5rem;
+    }
+
+        .bp-modal-header .bp-title {
+            color: #fff;
+            font-size: 1.4rem;
+        }
+
+    .bp-modal-body {
+        padding: 1.5rem;
+        background: var(--bp-concrete);
+    }
+
+    .bp-modal-footer {
+        border-top: 1px solid var(--bp-line);
+        padding: 1rem 1.5rem;
+    }
+
+    .bp-label {
+        display: block;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+        margin-bottom: 0.3rem;
+    }
+
+    @@media (max-width: 576px) {
+        .bp-filterbar {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        const search = document.getElementById('bpSearch');
+        const estado = document.getElementById('bpFiltroEstado');
+        const origen = document.getElementById('bpFiltroOrigen');
+        const rows = Array.from(document.querySelectorAll('#bpTbody tr'));
+        const empty = document.getElementById('bpEmpty');
+
+        function aplicarFiltros() {
+            const texto = search.value.trim().toLowerCase();
+            const est = estado.value;
+            const ori = origen.value;
+            let visibles = 0;
+
+            rows.forEach(row => {
+                const coincideTexto = row.dataset.search.includes(texto);
+                const coincideEstado = !est || row.dataset.estado === est;
+                const coincideOrigen = !ori || row.dataset.origen === ori;
+                const visible = coincideTexto && coincideEstado && coincideOrigen;
+                row.classList.toggle('d-none', !visible);
+                if (visible) visibles++;
+            });
+
+            empty.classList.toggle('d-none', visibles > 0);
+        }
+
+        search.addEventListener('input', aplicarFiltros);
+        estado.addEventListener('change', aplicarFiltros);
+        origen.addEventListener('change', aplicarFiltros);
+    })();
+</script>
