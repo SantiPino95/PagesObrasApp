@@ -1,0 +1,804 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.NovedadesModel
+@using System.Linq
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Novedades";
+
+    // --- Datos de muestra (mock) — reemplazar por Model.* cuando conectemos la API vía DTOs ---
+    var today = new DateTime(2026, 6, 22);
+
+    var novedades = new[]
+    {
+        new { Id=1,  IdEmpObra=1,  Empleado="Rodrigo Méndez",    Obra="Edificio Las Acacias",     Fecha=today,                      Tipo="Falta de Material",  Desc="Se agotó el cemento Portland. Quedan aproximadamente 2 bolsas. Necesitamos reposición urgente para continuar con la losa.",                Estado="Pendiente" },
+        new { Id=2,  IdEmpObra=5,  Empleado="Luciana Torres",     Obra="Torre Mirador",            Fecha=today,                      Tipo="Rotura Equipo",      Desc="La amoladora angular HER-0045 dejó de funcionar durante el trabajo. Se generó un cortocircuito. Queda inhabilitada hasta revisión técnica.", Estado="Pendiente" },
+        new { Id=3,  IdEmpObra=7,  Empleado="Carlos Espínola",    Obra="Edificio Las Acacias",     Fecha=today.AddDays(-1),          Tipo="Incidencia Personal", Desc="El ayudante Pablo Ríos sufrió un corte leve en la mano derecha al manipular hierro. Se le realizaron primeros auxilios en obra. Sin hospitalización.", Estado="Pendiente" },
+        new { Id=4,  IdEmpObra=4,  Empleado="Diego Pereira",      Obra="Galpón Industrial Ruta 5", Fecha=today.AddDays(-1),          Tipo="Clima",              Desc="Fuertes lluvias durante la mañana impidieron trabajar en el exterior. Se perdieron 4 horas de trabajo. Se reprograman tareas de techado para el lunes.", Estado="Pendiente" },
+        new { Id=5,  IdEmpObra=10, Empleado="Sebastián Ferreira",  Obra="Casa Familia Pérez",       Fecha=today.AddDays(-2),          Tipo="Falta de Material",  Desc="No llegó el pedido de ladrillos que estaba pactado para hoy. El proveedor no respondió llamados. Hay que gestionar un proveedor alternativo.",    Estado="Pendiente" },
+        new { Id=6,  IdEmpObra=3,  Empleado="Carlos Espínola",    Obra="Galpón Industrial Ruta 5", Fecha=today.AddDays(-3),          Tipo="Otro",               Desc="Vecinos del predio se quejaron por el ruido de la soldadora después de las 18hs. Se ajustaron los horarios de trabajo para evitar conflictos.",   Estado="Revisado"  },
+        new { Id=7,  IdEmpObra=1,  Empleado="Rodrigo Méndez",    Obra="Edificio Las Acacias",     Fecha=today.AddDays(-4),          Tipo="Clima",              Desc="Tormenta eléctrica obligó a suspender trabajos en altura durante toda la tarde del jueves. Se perdieron 6 horas de equipo.",                     Estado="Revisado"  },
+        new { Id=8,  IdEmpObra=5,  Empleado="Luciana Torres",     Obra="Torre Mirador",            Fecha=today.AddDays(-5),          Tipo="Falta de Material",  Desc="El hierro Ø8 llegó con medidas incorrectas. Se devolvió el lote al proveedor. Está gestionando el reenvío correcto.",                           Estado="Revisado"  },
+        new { Id=9,  IdEmpObra=11, Empleado="Pablo Ríos",         Obra="Reforma Local Comercial",  Fecha=today.AddDays(-6),          Tipo="Rotura Equipo",      Desc="El taladro percutor HER-0093 presenta falla en el mandril. No agarra las brocas. Se retiró de uso y se mandó a revisión.",                      Estado="Revisado"  },
+        new { Id=10, IdEmpObra=4,  Empleado="Diego Pereira",      Obra="Galpón Industrial Ruta 5", Fecha=today.AddDays(-8),          Tipo="Incidencia Personal", Desc="Trabajador externo resbaló en zona mojada. Sin heridos graves. Se señalizó el área y se colocaron alfombras antideslizantes.",                 Estado="Revisado"  },
+    };
+
+    var pendientes = novedades.Where(n => n.Estado == "Pendiente").OrderByDescending(n => n.Fecha).ToList();
+    var revisadas = novedades.Where(n => n.Estado == "Revisado").OrderByDescending(n => n.Fecha).ToList();
+
+    var totalPend = pendientes.Count;
+    var totalRevis = revisadas.Count;
+    var tiposUnicos = novedades.Select(n => n.Tipo).Distinct().Count();
+
+    // Prioridad visual por tipo
+    var tipoPrioridad = new Dictionary<string, (string cls, string icon, string label)>
+    {
+        {"Falta de Material",   ("tipo-material",   "📦", "Falta de Material")},
+        {"Rotura Equipo",       ("tipo-rotura",     "🔧", "Rotura de Equipo") },
+        {"Incidencia Personal", ("tipo-incidencia", "🚨", "Incidencia Personal")},
+        {"Clima",               ("tipo-clima",      "🌧", "Clima")            },
+        {"Otro",                ("tipo-otro",       "📋", "Otro")             },
+    };
+
+    var resumenTipos = novedades
+        .GroupBy(n => n.Tipo)
+        .Select(g => new { Tipo = g.Key, Total = g.Count(), Pendientes = g.Count(n => n.Estado == "Pendiente") })
+        .OrderByDescending(t => t.Pendientes).ThenByDescending(t => t.Total)
+        .ToList();
+
+    var obras = novedades.Select(n => n.Obra).Distinct().OrderBy(o => o).ToArray();
+    var tipos = tipoPrioridad.Keys.ToArray();
+}
+
+<div class="admin-dashboard">
+
+    <!-- HEADER -->
+    <section class="bp-section">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-2">
+            <div>
+                <span class="bp-eyebrow">Bandeja de entrada</span>
+                <h1 class="bp-title bp-title-dark">
+                    Novedades
+                    @if (totalPend > 0)
+                    {
+                        <span class="bp-header-badge">@totalPend</span>
+                    }
+                </h1>
+            </div>
+            <button class="bp-btn-ghost" id="btnMarcarTodas" @(totalPend == 0 ? "disabled" : "")>
+                ✓ Marcar todas como revisadas
+            </button>
+        </div>
+    </section>
+
+    <!-- STAT CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="bp-stat-card @(totalPend > 0 ? "bp-stat-card--alerta" : "")">
+                <span class="bp-stat-label">Pendientes</span>
+                <span class="bp-stat-num @(totalPend > 0 ? "bp-stat-num--amber" : "")">@totalPend</span>
+                <span class="bp-stat-sub">sin revisar</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="bp-stat-card">
+                <span class="bp-stat-label">Revisadas</span>
+                <span class="bp-stat-num">@totalRevis</span>
+                <span class="bp-stat-sub">en el historial</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="bp-stat-card">
+                <span class="bp-stat-label">Total</span>
+                <span class="bp-stat-num">@novedades.Length</span>
+                <span class="bp-stat-sub">@tiposUnicos tipos distintos</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="bp-stat-card">
+                <span class="bp-stat-label">Obras con novedades</span>
+                <span class="bp-stat-num">@novedades.Select(n => n.Obra).Distinct().Count()</span>
+                <span class="bp-stat-sub">reportando actividad</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESUMEN POR TIPO -->
+    <div class="bp-tipo-row mb-4">
+        @foreach (var t in resumenTipos)
+        {
+            (string cls, string icon, string label) meta = tipoPrioridad.ContainsKey(t.Tipo)
+                       ? tipoPrioridad[t.Tipo]
+                     : ("tipo-otro", "📋", t.Tipo);
+            <div class="bp-tipo-chip bp-tipo-chip--@meta.cls @(t.Pendientes > 0 ? "bp-tipo-chip--activo" : "")">
+                <span class="bp-tipo-icon">@meta.icon</span>
+                <span class="bp-tipo-nombre">@meta.label</span>
+                @if (t.Pendientes > 0)
+                {
+                    <span class="bp-tipo-count">@t.Pendientes</span>
+                }
+                else
+                {
+                    <span class="bp-tipo-count bp-tipo-count--ok">@t.Total</span>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- FILTROS -->
+    <div class="bp-filterbar mb-3">
+        <input type="text" id="bpSearch" class="bp-input" placeholder="Buscar en novedades...">
+        <select id="bpFiltroObra" class="bp-select">
+            <option value="">Todas las obras</option>
+            @foreach (var o in obras)
+            {
+                <option value="@o.ToLower()">@o</option>
+            }
+        </select>
+        <select id="bpFiltroTipo" class="bp-select">
+            <option value="">Todos los tipos</option>
+            @foreach (var t in tipos)
+            {
+                var meta = tipoPrioridad[t];
+                <option value="@t.ToLower()">@meta.icon @meta.label</option>
+            }
+        </select>
+        <select id="bpFiltroEstado" class="bp-select">
+            <option value="">Todas</option>
+            <option value="pendiente">Solo pendientes</option>
+            <option value="revisado">Solo revisadas</option>
+        </select>
+    </div>
+
+    <!-- PENDIENTES -->
+    @if (pendientes.Any())
+    {
+        <div class="bp-grupo-label">
+            <span class="bp-dot-pulse-sm"></span>
+            Pendientes de revisión — @pendientes.Count novedad@(pendientes.Count > 1 ? "es" : "")
+        </div>
+    }
+
+    <div id="bpLista">
+        @foreach (var n in pendientes.Concat(revisadas))
+        {
+            (string cls, string icon, string label) meta = tipoPrioridad.ContainsKey(n.Tipo)
+             ? tipoPrioridad[n.Tipo]
+             : ("tipo-otro", "📋", n.Tipo);
+            var esPend = n.Estado == "Pendiente";
+            var diasAtras = (today - n.Fecha).Days;
+            var fechaLabel = diasAtras == 0 ? "Hoy" : diasAtras == 1 ? "Ayer" : $"Hace {diasAtras} días";
+
+            <div class="bp-novedad @(esPend ? "bp-novedad--pendiente" : "bp-novedad--revisada")"
+                 data-estado="@n.Estado.ToLower()"
+                 data-obra="@n.Obra.ToLower()"
+                 data-tipo="@n.Tipo.ToLower()"
+                 data-search="@($"{n.Empleado} {n.Obra} {n.Tipo} {n.Desc}".ToLower())"
+                 id="nov-@n.Id">
+
+                <!-- Franja izquierda de tipo -->
+                <div class="bp-novedad-stripe bp-novedad-stripe--@meta.cls"></div>
+
+                <!-- Cuerpo -->
+                <div class="bp-novedad-body">
+
+                    <!-- Fila superior: tipo + obra + fecha + acciones -->
+                    <div class="bp-novedad-top">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="bp-tipo-badge bp-tipo-badge--@meta.cls">
+                                @meta.icon @meta.label
+                            </span>
+                            <span class="bp-obra-tag">@n.Obra</span>
+                            @if (esPend)
+                            {
+                                <span class="bp-pend-badge">● Pendiente</span>
+                            }
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                            <span class="bp-fecha">@fechaLabel · @n.Fecha.ToString("dd/MM/yyyy")</span>
+                            @if (esPend)
+                            {
+                                <button class="bp-revisar-btn" onclick="marcarRevisada(@n.Id)" title="Marcar como revisada">
+                                    ✓ Marcar revisada
+                                </button>
+                            }
+                            else
+                            {
+                                <span class="bp-revisada-tag">✓ Revisado</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <p class="bp-novedad-desc">@n.Desc</p>
+
+                    <!-- Pie: quién reportó -->
+                    <div class="bp-novedad-foot">
+                        <span class="bp-reporter">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M6 20v-1a6 6 0 0112 0v1" /></svg>
+                            Reportado por <strong>@n.Empleado</strong>
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+        }
+    </div>
+
+    <p id="bpEmpty" class="bp-empty d-none">No hay novedades que coincidan con los filtros.</p>
+    <p class="bp-count mt-2">Mostrando <span id="bpCount">@novedades.Length</span> de @novedades.Length novedades</p>
+
+</div>
+
+<style>
+    .admin-dashboard {
+        --bp-blueprint: #1B3A5C;
+        --bp-blueprint-light: #2D5C8C;
+        --bp-concrete: #F1EFEA;
+        --bp-steel: #5B6670;
+        --bp-safety: #F2A900;
+        --bp-ink: #181B1F;
+        --bp-line: #D8D3C8;
+        --bp-ok: #2E7D52;
+        --bp-danger: #B23A2E;
+        font-family: 'Inter', sans-serif;
+        color: var(--bp-ink);
+    }
+
+        .admin-dashboard .bp-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .72rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+        }
+
+    .bp-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 600;
+        letter-spacing: .01em;
+        margin: .15rem 0;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .bp-title-dark {
+        font-size: 2rem;
+        color: var(--bp-ink);
+    }
+
+    .bp-section {
+        margin-bottom: 1.75rem;
+    }
+
+    .bp-mono {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .82rem;
+    }
+
+    .bp-steel {
+        color: var(--bp-steel);
+    }
+
+    /* Badge en el título */
+    .bp-header-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bp-danger);
+        color: #fff;
+        font-family: 'Inter', sans-serif;
+        font-size: .75rem;
+        font-weight: 700;
+        min-width: 24px;
+        height: 24px;
+        border-radius: 100px;
+        padding: 0 .4rem;
+        line-height: 1;
+    }
+
+    /* Botones */
+    .bp-btn-ghost {
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: .88rem;
+        background: transparent;
+        color: var(--bp-steel);
+        border: 1px solid var(--bp-line);
+        border-radius: 6px;
+        padding: .55rem 1.1rem;
+        cursor: pointer;
+        transition: border-color .15s, color .15s;
+    }
+
+        .bp-btn-ghost:hover:not(:disabled) {
+            border-color: var(--bp-steel);
+            color: var(--bp-ink);
+        }
+
+        .bp-btn-ghost:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+    /* Stat cards */
+    .bp-stat-card {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        padding: 1rem 1.1rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+    }
+
+    .bp-stat-card--alerta {
+        border-left: 3px solid var(--bp-safety);
+    }
+
+    .bp-stat-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+    }
+
+    .bp-stat-num {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--bp-ink);
+        line-height: 1.1;
+    }
+
+    .bp-stat-num--amber {
+        color: var(--bp-safety);
+    }
+
+    .bp-stat-sub {
+        font-size: .75rem;
+        color: var(--bp-steel);
+    }
+
+    /* Chips de resumen por tipo */
+    .bp-tipo-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    .bp-tipo-chip {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        padding: .45rem .85rem;
+        font-size: .8rem;
+        color: var(--bp-steel);
+        transition: border-color .15s;
+    }
+
+    .bp-tipo-chip--activo {
+        border-color: currentColor;
+    }
+
+    .bp-tipo-chip--tipo-material {
+        color: #2D6CDF;
+    }
+
+    .bp-tipo-chip--tipo-rotura {
+        color: var(--bp-danger);
+    }
+
+    .bp-tipo-chip--tipo-incidencia {
+        color: #8B4E9E;
+    }
+
+    .bp-tipo-chip--tipo-clima {
+        color: #3890C8;
+    }
+
+    .bp-tipo-chip--tipo-otro {
+        color: var(--bp-steel);
+    }
+
+    .bp-tipo-icon {
+        font-size: .95rem;
+    }
+
+    .bp-tipo-nombre {
+        font-size: .78rem;
+        font-weight: 500;
+    }
+
+    .bp-tipo-count {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .72rem;
+        font-weight: 700;
+        background: currentColor;
+        color: #fff;
+        padding: .05rem .4rem;
+        border-radius: 100px;
+        filter: brightness(1);
+    }
+
+    .bp-tipo-count--ok {
+        background: var(--bp-concrete);
+        color: var(--bp-steel);
+    }
+
+    /* Filtros */
+    .bp-filterbar {
+        display: flex;
+        gap: .75rem;
+        flex-wrap: wrap;
+    }
+
+    .bp-input, .bp-select {
+        font-family: 'Inter', sans-serif;
+        font-size: .88rem;
+        border: 1px solid var(--bp-line);
+        border-radius: 6px;
+        padding: .5rem .8rem;
+        background: #fff;
+        color: var(--bp-ink);
+    }
+
+        .bp-input:focus, .bp-select:focus {
+            outline: none;
+            border-color: var(--bp-blueprint-light);
+            box-shadow: 0 0 0 3px rgba(45,92,140,.12);
+        }
+
+    #bpSearch {
+        flex: 1;
+        min-width: 220px;
+    }
+
+    /* Label de grupo */
+    .bp-grupo-label {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+        margin-bottom: .75rem;
+    }
+
+    .bp-dot-pulse-sm {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--bp-safety);
+        flex-shrink: 0;
+        animation: bpPulse 1.8s ease-in-out infinite;
+    }
+
+    @@keyframes bpPulse {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(242,169,0,.5);
+        }
+
+        50% {
+            box-shadow: 0 0 0 5px rgba(242,169,0,0);
+        }
+    }
+
+    /* Cards de novedad */
+    .bp-novedad {
+        display: flex;
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: .75rem;
+        transition: box-shadow .2s, border-color .2s;
+    }
+
+        .bp-novedad:hover {
+            box-shadow: 0 3px 14px rgba(27,58,92,.08);
+        }
+
+    .bp-novedad--pendiente {
+        border-color: #c8cdd5;
+    }
+
+    .bp-novedad--revisada {
+        opacity: .72;
+    }
+
+        .bp-novedad--revisada:hover {
+            opacity: 1;
+        }
+
+    /* Franja de color izquierda según tipo */
+    .bp-novedad-stripe {
+        width: 5px;
+        flex-shrink: 0;
+    }
+
+    .bp-novedad-stripe--tipo-material {
+        background: #2D6CDF;
+    }
+
+    .bp-novedad-stripe--tipo-rotura {
+        background: var(--bp-danger);
+    }
+
+    .bp-novedad-stripe--tipo-incidencia {
+        background: #8B4E9E;
+    }
+
+    .bp-novedad-stripe--tipo-clima {
+        background: #3890C8;
+    }
+
+    .bp-novedad-stripe--tipo-otro {
+        background: var(--bp-steel);
+    }
+
+    .bp-novedad-body {
+        flex: 1;
+        padding: 1rem 1.15rem;
+        display: flex;
+        flex-direction: column;
+        gap: .6rem;
+        min-width: 0;
+    }
+
+    /* Fila superior */
+    .bp-novedad-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: .75rem;
+        flex-wrap: wrap;
+    }
+
+    .bp-tipo-badge {
+        font-size: .72rem;
+        font-weight: 600;
+        padding: .2rem .55rem;
+        border-radius: 100px;
+        white-space: nowrap;
+    }
+
+    .bp-tipo-badge--tipo-material {
+        background: #E8F0FC;
+        color: #2D6CDF;
+    }
+
+    .bp-tipo-badge--tipo-rotura {
+        background: #FBF0EF;
+        color: var(--bp-danger);
+    }
+
+    .bp-tipo-badge--tipo-incidencia {
+        background: #F5EDF8;
+        color: #8B4E9E;
+    }
+
+    .bp-tipo-badge--tipo-clima {
+        background: #EAF3FA;
+        color: #3890C8;
+    }
+
+    .bp-tipo-badge--tipo-otro {
+        background: var(--bp-concrete);
+        color: var(--bp-steel);
+    }
+
+    .bp-obra-tag {
+        font-size: .75rem;
+        background: var(--bp-concrete);
+        color: var(--bp-ink);
+        border-radius: 100px;
+        padding: .18rem .6rem;
+        font-weight: 500;
+    }
+
+    .bp-pend-badge {
+        font-size: .7rem;
+        font-weight: 700;
+        color: var(--bp-safety);
+        animation: bpPulse 2s ease-in-out infinite;
+    }
+
+    .bp-fecha {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .72rem;
+        color: var(--bp-steel);
+        white-space: nowrap;
+    }
+
+    .bp-revisar-btn {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: .78rem;
+        background: var(--bp-ok);
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: .28rem .75rem;
+        cursor: pointer;
+        transition: background .15s;
+        white-space: nowrap;
+    }
+
+        .bp-revisar-btn:hover {
+            background: #235f3e;
+        }
+
+    .bp-revisada-tag {
+        font-size: .75rem;
+        font-weight: 600;
+        color: var(--bp-ok);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Descripción */
+    .bp-novedad-desc {
+        font-size: .88rem;
+        line-height: 1.55;
+        color: var(--bp-ink);
+        margin: 0;
+    }
+
+    /* Pie */
+    .bp-novedad-foot {
+        border-top: 1px dashed var(--bp-line);
+        padding-top: .5rem;
+    }
+
+    .bp-reporter {
+        display: flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .78rem;
+        color: var(--bp-steel);
+    }
+
+        .bp-reporter svg {
+            width: 13px;
+            height: 13px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        .bp-reporter strong {
+            color: var(--bp-ink);
+        }
+
+    .bp-empty {
+        text-align: center;
+        padding: 3rem;
+        color: var(--bp-steel);
+    }
+
+    .bp-count {
+        font-size: .8rem;
+        color: var(--bp-steel);
+    }
+
+    @@media (max-width: 576px) {
+        .bp-filterbar {
+            flex-direction: column;
+        }
+
+        .bp-novedad-top {
+            flex-direction: column;
+            gap: .5rem;
+        }
+
+        .bp-tipo-row {
+            gap: .35rem;
+        }
+
+        .bp-tipo-chip {
+            padding: .35rem .65rem;
+        }
+
+        .bp-tipo-nombre {
+            display: none;
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        const search      = document.getElementById('bpSearch');
+        const filtroObra  = document.getElementById('bpFiltroObra');
+        const filtroTipo  = document.getElementById('bpFiltroTipo');
+        const filtroEst   = document.getElementById('bpFiltroEstado');
+        const items       = Array.from(document.querySelectorAll('.bp-novedad'));
+        const empty       = document.getElementById('bpEmpty');
+        const count       = document.getElementById('bpCount');
+
+        function aplicarFiltros() {
+            const txt  = search.value.trim().toLowerCase();
+            const obra = filtroObra.value.toLowerCase();
+            const tipo = filtroTipo.value.toLowerCase();
+            const est  = filtroEst.value.toLowerCase();
+            let vis = 0;
+
+            items.forEach(item => {
+                const ok = (!txt  || item.dataset.search.includes(txt))
+                        && (!obra || item.dataset.obra.includes(obra))
+                        && (!tipo || item.dataset.tipo.includes(tipo))
+                        && (!est  || item.dataset.estado === est);
+                item.style.display = ok ? '' : 'none';
+                if (ok) vis++;
+            });
+
+            count.textContent = vis;
+            empty.classList.toggle('d-none', vis > 0);
+        }
+
+        search.addEventListener('input', aplicarFiltros);
+        filtroObra.addEventListener('change', aplicarFiltros);
+        filtroTipo.addEventListener('change', aplicarFiltros);
+        filtroEst.addEventListener('change', aplicarFiltros);
+
+        // Marcar una novedad como revisada
+        window.marcarRevisada = function(id) {
+            const card = document.getElementById('nov-' + id);
+            if (!card) return;
+
+            // TODO: conectar a OnPostMarcarRevisada(id) via fetch hacia la API
+
+            // Feedback visual inmediato (optimistic update)
+            card.classList.remove('bp-novedad--pendiente');
+            card.classList.add('bp-novedad--revisada');
+            card.dataset.estado = 'revisado';
+
+            const btn = card.querySelector('.bp-revisar-btn');
+            if (btn) {
+                const repl = document.createElement('span');
+                repl.className = 'bp-revisada-tag';
+                repl.textContent = '✓ Revisado';
+                btn.replaceWith(repl);
+            }
+
+            const pendBadge = card.querySelector('.bp-pend-badge');
+            if (pendBadge) pendBadge.remove();
+
+            actualizarContador();
+            aplicarFiltros();
+        };
+
+        // Marcar todas las pendientes
+        document.getElementById('btnMarcarTodas').addEventListener('click', () => {
+            document.querySelectorAll('.bp-novedad--pendiente').forEach(card => {
+                const id = parseInt(card.id.replace('nov-', ''));
+                marcarRevisada(id);
+            });
+        });
+
+        function actualizarContador() {
+            const pend = document.querySelectorAll('.bp-novedad--pendiente').length;
+            const headerBadge = document.querySelector('.bp-header-badge');
+            const statNum     = document.querySelector('.bp-stat-card--alerta .bp-stat-num');
+
+            if (headerBadge) {
+                if (pend === 0) headerBadge.remove();
+                else headerBadge.textContent = pend;
+            }
+            if (statNum) statNum.textContent = pend;
+
+            // Deshabilitar botón si no quedan pendientes
+            const btnTodas = document.getElementById('btnMarcarTodas');
+            btnTodas.disabled = pend === 0;
+        }
+    })();
+</script>
