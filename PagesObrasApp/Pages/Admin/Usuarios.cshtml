@@ -1,4 +1,1042 @@
 ﻿@page
 @model PagesObrasApp.Pages.Admin.UsuariosModel
+@using System.Linq
 @{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Usuarios";
+
+    // --- Datos de muestra (mock) — reemplazar por Model.* cuando conectemos la API vía DTOs ---
+    var roles = new[] { "Administrador", "Capataz", "Empleado" };
+
+    var empleadosSinUsuario = new[]
+    {
+        new { Id=3, Nombre="Marcelo Suárez",  Cedula="5.123.456-7" },
+        new { Id=6, Nombre="Pablo Ríos",       Cedula="5.654.321-9" },
+        new { Id=8, Nombre="Fabian Núñez",     Cedula="4.333.111-8" },
+    };
+
+    var usuarios = new[]
+    {
+        new { Id=1,  Email="admin@constructora.com",     Rol="Administrador", Estado="Activo",    FechaReg=new DateTime(2026,1,15), Empleado=(string)null,        Cedula=(string)null        },
+        new { Id=2,  Email="rodrigo.mendez@gmail.com",   Rol="Capataz",       Estado="Activo",    FechaReg=new DateTime(2026,2,8),  Empleado="Rodrigo Méndez",    Cedula="4.521.887-3"       },
+        new { Id=3,  Email="sferreira@hotmail.com",      Rol="Empleado",      Estado="Activo",    FechaReg=new DateTime(2026,2,9),  Empleado="Sebastián Ferreira",Cedula="3.987.654-1"       },
+        new { Id=4,  Email="diego.pereira@gmail.com",    Rol="Empleado",      Estado="Activo",    FechaReg=new DateTime(2026,4,20), Empleado="Diego Pereira",     Cedula="4.789.012-5"       },
+        new { Id=5,  Email="luciana.torres@outlook.com", Rol="Capataz",       Estado="Activo",    FechaReg=new DateTime(2026,5,1),  Empleado="Luciana Torres",    Cedula="3.456.789-2"       },
+        // Pendientes de aprobación
+        new { Id=6,  Email="carlos.espinola@gmail.com",  Rol=(string)null,    Estado="Pendiente", FechaReg=new DateTime(2026,6,20), Empleado=(string)null,        Cedula=(string)null        },
+        new { Id=7,  Email="pablo.rios@hotmail.com",     Rol=(string)null,    Estado="Pendiente", FechaReg=new DateTime(2026,6,21), Empleado=(string)null,        Cedula=(string)null        },
+        new { Id=8,  Email="nuevoempleado@gmail.com",    Rol=(string)null,    Estado="Pendiente", FechaReg=new DateTime(2026,6,22), Empleado=(string)null,        Cedula=(string)null        },
+        // Suspendido
+        new { Id=9,  Email="exempleado@gmail.com",       Rol="Empleado",      Estado="Suspendido",FechaReg=new DateTime(2026,3,10), Empleado="Juan Rodríguez",    Cedula="4.999.888-1"       },
+    };
+
+    var pendientes = usuarios.Where(u => u.Estado == "Pendiente").OrderByDescending(u => u.FechaReg).ToList();
+    var activos = usuarios.Where(u => u.Estado == "Activo").OrderBy(u => u.Rol).ThenBy(u => u.Email).ToList();
+    var suspendidos = usuarios.Where(u => u.Estado == "Suspendido").ToList();
+
+    var totalActivos = activos.Count;
+    var totalPendientes = pendientes.Count;
+    var totalSuspendidos = suspendidos.Count;
 }
+
+<div class="admin-dashboard">
+
+    <!-- HEADER -->
+    <section class="bp-section">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-2">
+            <div>
+                <span class="bp-eyebrow">Control de acceso</span>
+                <h1 class="bp-title bp-title-dark">
+                    Usuarios
+                    @if (totalPendientes > 0)
+                    {
+                        <span class="bp-header-badge">@totalPendientes pendiente@(totalPendientes > 1 ? "s" : "")</span>
+                    }
+                </h1>
+            </div>
+        </div>
+    </section>
+
+    <!-- ACLARACIÓN DE ROLES -->
+    <div class="bp-info-box mb-4">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+        <div>
+            <strong>Roles del sistema vs roles en obra</strong> — El rol que asignás acá controla
+            <em>qué páginas puede ver</em> el usuario.
+            El rol operativo en cada obra (Capataz, Oficial, Ayudante) se asigna por separado en
+            <a href="/Admin/AsignacionEmpleados">Asignación de empleados</a> y son independientes.
+            <span class="bp-info-table">
+                <span><strong>Empleado</strong> → carga horas y reporta novedades</span>
+                <span><strong>Capataz</strong> → además ve su equipo y gestiona la obra</span>
+                <span><strong>Administrador</strong> → acceso completo al panel</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="bp-stat-card bp-stat-card--ok">
+                <span class="bp-stat-label">Activos</span>
+                <span class="bp-stat-num bp-stat-num--ok">@totalActivos</span>
+                <span class="bp-stat-sub">con acceso al sistema</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="bp-stat-card @(totalPendientes > 0 ? "bp-stat-card--pend" : "")">
+                <span class="bp-stat-label">Pendientes</span>
+                <span class="bp-stat-num @(totalPendientes > 0 ? "bp-stat-num--amber" : "")">@totalPendientes</span>
+                <span class="bp-stat-sub">esperando aprobación</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="bp-stat-card">
+                <span class="bp-stat-label">Suspendidos</span>
+                <span class="bp-stat-num bp-stat-num--steel">@totalSuspendidos</span>
+                <span class="bp-stat-sub">sin acceso temporal</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN 1: PENDIENTES
+    ══════════════════════════════════════ -->
+    @if (pendientes.Any())
+    {
+        <section class="bp-section">
+            <div class="bp-grupo-label mb-3">
+                <span class="bp-dot-pulse"></span>
+                Esperando aprobación — @pendientes.Count usuario@(pendientes.Count > 1 ? "s" : "")
+            </div>
+
+            <div class="row g-3">
+                @foreach (var u in pendientes)
+                {
+                    var diasEspera = (DateTime.Today - u.FechaReg).Days;
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <div class="bp-pend-card">
+
+                            <div class="bp-pend-header">
+                                <div class="bp-user-avatar bp-user-avatar--pend">?</div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="bp-user-email">@u.Email</div>
+                                    <div class="bp-mono bp-steel">
+                                        Registrado hace @diasEspera día@(diasEspera != 1 ? "s" : "")
+                                        · @u.FechaReg.ToString("dd/MM/yyyy")
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bp-pend-body">
+                                <!-- Asignar rol -->
+                                <div class="mb-2">
+                                    <label class="bp-label">Rol en el sistema</label>
+                                    <select class="bp-select w-100 bp-rol-select" id="rol-@u.Id">
+                                        <option value="">Seleccionar rol...</option>
+                                        @foreach (var r in roles)
+                                        {
+                                            <option value="@r">@r</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <!-- Vincular empleado -->
+                                <div id="empWrap-@u.Id" class="mb-3 bp-emp-wrap">
+                                    <label class="bp-label">
+                                        Vincular a empleado
+                                        <span class="bp-optional">(si es Empleado o Capataz)</span>
+                                    </label>
+                                    <select class="bp-select w-100 bp-emp-select" id="emp-@u.Id">
+                                        <option value="">Sin vincular / crear nuevo</option>
+                                        @foreach (var e in empleadosSinUsuario)
+                                        {
+                                            <option value="@e.Id">@e.Nombre (@e.Cedula)</option>
+                                        }
+                                    </select>
+                                    <p class="bp-hint">Si el empleado ya existe en nómina, vinculalo para que comparta sus datos.</p>
+                                </div>
+
+                                <!-- Botones -->
+                                <div class="d-flex gap-2">
+                                    <button class="bp-btn-aprobar flex-grow-1"
+                                            onclick="aprobar(@u.Id, '@u.Email')">
+                                        ✓ Aprobar
+                                    </button>
+                                    <button class="bp-btn-rechazar"
+                                            onclick="rechazarAcceso(@u.Id, '@u.Email')">
+                                        ✗
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN 2: ACTIVOS
+    ══════════════════════════════════════ -->
+    <section class="bp-section">
+        <span class="bp-eyebrow">Usuarios activos</span>
+
+        <div class="bp-filterbar mt-2 mb-3">
+            <input type="text" id="bpSearch" class="bp-input" placeholder="Buscar por email o empleado...">
+            <select id="bpFiltroRol" class="bp-select">
+                <option value="">Todos los roles</option>
+                @foreach (var r in roles)
+                {
+                    <option value="@r.ToLower()">@r</option>
+                }
+            </select>
+        </div>
+
+        <div class="bp-table-wrap">
+            <table class="bp-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Empleado vinculado</th>
+                        <th>Rol sistema</th>
+                        <th>Desde</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="bpTbody">
+                    @foreach (var u in activos)
+                    {
+                        var rolCls = u.Rol?.ToLower() ?? "empleado";
+                        <tr data-search="@($"{u.Email} {u.Empleado}".ToLower())"
+                            data-rol="@rolCls">
+                            <td class="bp-mono bp-steel">@u.Id.ToString("D4")</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="bp-user-avatar bp-user-avatar--@rolCls">
+                                        @(u.Email.Substring(0, 1).ToUpper())
+                                    </div>
+                                    <span class="bp-user-email-sm">@u.Email</span>
+                                </div>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(u.Empleado))
+                                {
+                                    <div class="bp-strong">@u.Empleado</div>
+                                    <div class="bp-mono bp-steel">@u.Cedula</div>
+                                }
+                                else
+                                {
+                                    <span class="bp-sin-vincular">Sin empleado vinculado</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="bp-rol-badge bp-rol-badge--@rolCls">@u.Rol</span>
+                            </td>
+                            <td class="bp-mono bp-steel">@u.FechaReg.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end">
+                                <div class="bp-actions">
+                                    <button class="bp-action-btn"
+                                            onclick="cambiarRol(@u.Id,'@u.Email','@u.Rol')"
+                                            title="Cambiar rol">
+                                        Rol
+                                    </button>
+                                    @if (u.Rol != "Administrador")
+                                    {
+                                        <button class="bp-action-btn bp-action-btn--warn"
+                                                onclick="suspender(@u.Id,'@u.Email')"
+                                                title="Suspender acceso">
+                                            Suspender
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <p id="bpEmpty" class="bp-empty d-none">No hay usuarios que coincidan.</p>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         SECCIÓN 3: SUSPENDIDOS
+    ══════════════════════════════════════ -->
+    @if (suspendidos.Any())
+    {
+        <section class="bp-section">
+            <span class="bp-eyebrow">Suspendidos</span>
+            <div class="bp-table-wrap mt-2">
+                <table class="bp-table">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Empleado vinculado</th>
+                            <th>Rol</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in suspendidos)
+                        {
+                            <tr class="bp-row-suspendido">
+                                <td class="bp-user-email-sm">@u.Email</td>
+                                <td>@(u.Empleado ?? "—")</td>
+                                <td><span class="bp-rol-badge bp-rol-badge--suspendido">@u.Rol</span></td>
+                                <td class="text-end">
+                                    <button class="bp-action-btn bp-action-btn--ok"
+                                            onclick="reactivar(@u.Id,'@u.Email')">
+                                        Reactivar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+
+</div>
+
+<!-- Modal: Cambiar rol -->
+<div class="modal fade" id="modalCambiarRol" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content bp-modal">
+            <div class="modal-header bp-modal-header">
+                <div>
+                    <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Permisos</span>
+                    <h5 class="modal-title bp-title">Cambiar rol</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bp-modal-body">
+                <p class="bp-modal-hint" id="cambiarRolHint"></p>
+                <label class="bp-label mt-2">Nuevo rol</label>
+                <select id="cambiarRolSelect" class="bp-select w-100">
+                    @foreach (var r in roles)
+                    {
+                        <option value="@r">@r</option>
+                    }
+                </select>
+                <div class="bp-rol-desc mt-3" id="rolDesc"></div>
+            </div>
+            <div class="modal-footer bp-modal-footer">
+                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="bp-btn-primary" id="btnConfirmarRol">Guardar cambio</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirmar acción (suspender / reactivar / rechazar) -->
+<div class="modal fade" id="modalConfirmar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content bp-modal">
+            <div class="modal-header bp-modal-header" id="confirmarHeader">
+                <h5 class="modal-title bp-title" id="confirmarTitulo"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bp-modal-body">
+                <p id="confirmarMsg" style="font-size:.9rem;margin:0;line-height:1.5"></p>
+            </div>
+            <div class="modal-footer bp-modal-footer">
+                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="bp-btn-confirmar" id="btnConfirmar"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .admin-dashboard {
+        --bp-blueprint: #1B3A5C;
+        --bp-blueprint-light: #2D5C8C;
+        --bp-concrete: #F1EFEA;
+        --bp-steel: #5B6670;
+        --bp-safety: #F2A900;
+        --bp-ink: #181B1F;
+        --bp-line: #D8D3C8;
+        --bp-ok: #2E7D52;
+        --bp-danger: #B23A2E;
+        font-family: 'Inter', sans-serif;
+        color: var(--bp-ink);
+    }
+
+        .admin-dashboard .bp-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .72rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+        }
+
+    .bp-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 600;
+        letter-spacing: .01em;
+        margin: .15rem 0;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    .bp-title-dark {
+        font-size: 2rem;
+        color: var(--bp-ink);
+    }
+
+    .bp-section {
+        margin-bottom: 2rem;
+    }
+
+    .bp-mono {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .82rem;
+    }
+
+    .bp-steel {
+        color: var(--bp-steel);
+    }
+
+    .bp-strong {
+        font-weight: 600;
+    }
+
+    /* Info box */
+    .bp-info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: .85rem;
+        background: #EAF0F8;
+        border: 1px solid #c5d5e8;
+        border-radius: 8px;
+        padding: 1rem 1.15rem;
+        font-size: .85rem;
+        color: var(--bp-blueprint);
+    }
+
+        .bp-info-box svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .bp-info-box a {
+            color: var(--bp-blueprint);
+            font-weight: 600;
+        }
+
+    .bp-info-table {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .4rem .9rem;
+        margin-top: .6rem;
+        font-size: .78rem;
+    }
+
+        .bp-info-table span {
+            opacity: .85;
+        }
+
+    /* Header badge */
+    .bp-header-badge {
+        font-family: 'Inter', sans-serif;
+        font-size: .75rem;
+        font-weight: 700;
+        background: var(--bp-safety);
+        color: var(--bp-ink);
+        padding: .15rem .65rem;
+        border-radius: 100px;
+    }
+
+    /* Stat cards */
+    .bp-stat-card {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        padding: 1rem 1.1rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+    }
+
+    .bp-stat-card--ok {
+        border-left: 3px solid var(--bp-ok);
+    }
+
+    .bp-stat-card--pend {
+        border-left: 3px solid var(--bp-safety);
+    }
+
+    .bp-stat-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+    }
+
+    .bp-stat-num {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--bp-ink);
+        line-height: 1.1;
+    }
+
+    .bp-stat-num--ok {
+        color: var(--bp-ok);
+    }
+
+    .bp-stat-num--amber {
+        color: var(--bp-safety);
+    }
+
+    .bp-stat-num--steel {
+        color: var(--bp-steel);
+    }
+
+    .bp-stat-sub {
+        font-size: .75rem;
+        color: var(--bp-steel);
+    }
+
+    /* Pulso pendientes */
+    .bp-grupo-label {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+    }
+
+    .bp-dot-pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--bp-safety);
+        flex-shrink: 0;
+        animation: bpPulse 1.8s ease-in-out infinite;
+    }
+
+    @@keyframes bpPulse {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(242,169,0,.5);
+        }
+
+        50% {
+            box-shadow: 0 0 0 5px rgba(242,169,0,0);
+        }
+    }
+
+    /* Cards pendientes */
+    .bp-pend-card {
+        background: #fff;
+        border: 1px solid var(--bp-safety);
+        border-radius: 10px;
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .bp-pend-header {
+        display: flex;
+        align-items: center;
+        gap: .85rem;
+        padding: .85rem 1rem;
+        background: #FFF8E8;
+        border-bottom: 1px solid #f0d98a;
+    }
+
+    .bp-pend-body {
+        padding: 1rem;
+    }
+
+    .bp-user-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        flex-shrink: 0;
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+    }
+
+    .bp-user-avatar--pend {
+        background: var(--bp-safety);
+        color: var(--bp-ink);
+    }
+
+    .bp-user-avatar--administrador {
+        background: var(--bp-blueprint);
+    }
+
+    .bp-user-avatar--capataz {
+        background: var(--bp-blueprint-light);
+    }
+
+    .bp-user-avatar--empleado {
+        background: var(--bp-steel);
+    }
+
+    .bp-user-email {
+        font-weight: 600;
+        font-size: .88rem;
+        word-break: break-all;
+    }
+
+    .bp-user-email-sm {
+        font-size: .85rem;
+        word-break: break-all;
+    }
+
+    .bp-optional {
+        font-weight: 400;
+        color: var(--bp-steel);
+        letter-spacing: 0;
+        text-transform: none;
+        font-size: .65rem;
+    }
+
+    .bp-hint {
+        font-size: .74rem;
+        color: var(--bp-steel);
+        margin: .3rem 0 0;
+    }
+
+    /* Botones en card pendiente */
+    .bp-btn-aprobar {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: .85rem;
+        background: var(--bp-ok);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: .5rem .9rem;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .bp-btn-aprobar:hover {
+            background: #235f3e;
+        }
+
+    .bp-btn-rechazar {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: .85rem;
+        background: none;
+        color: var(--bp-danger);
+        border: 1px solid var(--bp-danger);
+        border-radius: 6px;
+        padding: .5rem .75rem;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+        .bp-btn-rechazar:hover {
+            background: var(--bp-danger);
+            color: #fff;
+        }
+
+    /* Descripción de rol en modal */
+    .bp-rol-desc {
+        font-size: .8rem;
+        color: var(--bp-steel);
+        background: var(--bp-concrete);
+        border-radius: 6px;
+        padding: .6rem .8rem;
+        line-height: 1.5;
+    }
+
+    .bp-modal-hint {
+        font-size: .85rem;
+        color: var(--bp-ink);
+        margin: 0;
+    }
+
+    /* Filtros */
+    .bp-filterbar {
+        display: flex;
+        gap: .75rem;
+        flex-wrap: wrap;
+    }
+
+    .bp-input, .bp-select {
+        font-family: 'Inter', sans-serif;
+        font-size: .88rem;
+        border: 1px solid var(--bp-line);
+        border-radius: 6px;
+        padding: .5rem .8rem;
+        background: #fff;
+        color: var(--bp-ink);
+    }
+
+        .bp-input:focus, .bp-select:focus {
+            outline: none;
+            border-color: var(--bp-blueprint-light);
+            box-shadow: 0 0 0 3px rgba(45,92,140,.12);
+        }
+
+    #bpSearch {
+        flex: 1;
+        min-width: 220px;
+    }
+
+    /* Tabla activos */
+    .bp-table-wrap {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .bp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .88rem;
+    }
+
+        .bp-table thead th {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .68rem;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+            text-align: left;
+            padding: .75rem 1rem;
+            background: var(--bp-concrete);
+            border-bottom: 1px solid var(--bp-line);
+        }
+
+        .bp-table tbody td {
+            padding: .72rem 1rem;
+            border-bottom: 1px solid var(--bp-line);
+            vertical-align: middle;
+        }
+
+        .bp-table tbody tr:hover {
+            background: #fafaf8;
+        }
+
+        .bp-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+    .bp-row-suspendido {
+        opacity: .6;
+    }
+
+    .bp-sin-vincular {
+        font-size: .8rem;
+        color: var(--bp-steel);
+        font-style: italic;
+    }
+
+    .bp-empty {
+        text-align: center;
+        padding: 2rem;
+        color: var(--bp-steel);
+        margin: 0;
+    }
+
+    /* Badge de rol */
+    .bp-rol-badge {
+        font-size: .72rem;
+        font-weight: 600;
+        padding: .2rem .6rem;
+        border-radius: 100px;
+        white-space: nowrap;
+    }
+
+    .bp-rol-badge--administrador {
+        background: #E8EFF6;
+        color: var(--bp-blueprint);
+    }
+
+    .bp-rol-badge--capataz {
+        background: #E8F0FC;
+        color: var(--bp-blueprint-light);
+    }
+
+    .bp-rol-badge--empleado {
+        background: #EAECEE;
+        color: var(--bp-steel);
+    }
+
+    .bp-rol-badge--suspendido {
+        background: #FBF0EF;
+        color: var(--bp-danger);
+    }
+
+    /* Acciones */
+    .bp-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .35rem;
+    }
+
+    .bp-action-btn {
+        font-size: .78rem;
+        font-weight: 600;
+        border-radius: 5px;
+        padding: .22rem .6rem;
+        border: 1px solid var(--bp-line);
+        background: none;
+        cursor: pointer;
+        transition: all .15s;
+        color: var(--bp-steel);
+    }
+
+        .bp-action-btn:hover {
+            border-color: var(--bp-blueprint);
+            color: var(--bp-blueprint);
+        }
+
+    .bp-action-btn--warn:hover {
+        border-color: var(--bp-safety);
+        color: #92670a;
+        background: #FFF8E8;
+    }
+
+    .bp-action-btn--ok {
+        border-color: var(--bp-ok);
+        color: var(--bp-ok);
+    }
+
+        .bp-action-btn--ok:hover {
+            background: var(--bp-ok);
+            color: #fff;
+        }
+
+    /* Botones globales */
+    .bp-btn-primary {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: .88rem;
+        background: var(--bp-safety);
+        color: var(--bp-ink);
+        border: none;
+        border-radius: 6px;
+        padding: .55rem 1.1rem;
+        cursor: pointer;
+        transition: background .2s;
+    }
+
+        .bp-btn-primary:hover {
+            background: #d99500;
+        }
+
+    .bp-btn-ghost {
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: .88rem;
+        background: transparent;
+        color: var(--bp-steel);
+        border: 1px solid var(--bp-line);
+        border-radius: 6px;
+        padding: .55rem 1.1rem;
+        cursor: pointer;
+    }
+
+        .bp-btn-ghost:hover {
+            border-color: var(--bp-steel);
+            color: var(--bp-ink);
+        }
+
+    .bp-btn-confirmar {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: .88rem;
+        border: none;
+        border-radius: 6px;
+        padding: .55rem 1.1rem;
+        cursor: pointer;
+        color: #fff;
+    }
+
+    /* Modal */
+    .bp-modal {
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .bp-modal-header {
+        background: var(--bp-blueprint);
+        border: none;
+        padding: 1.25rem 1.5rem;
+    }
+
+        .bp-modal-header .bp-title {
+            color: #fff;
+            font-size: 1.4rem;
+        }
+
+    .bp-modal-body {
+        padding: 1.5rem;
+        background: var(--bp-concrete);
+    }
+
+    .bp-modal-footer {
+        border-top: 1px solid var(--bp-line);
+        padding: 1rem 1.5rem;
+    }
+
+    .bp-label {
+        display: block;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: .68rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+        margin-bottom: .3rem;
+    }
+
+    @@media (max-width: 576px) {
+        .bp-filterbar {
+            flex-direction: column;
+        }
+
+        .bp-info-table {
+            flex-direction: column;
+            gap: .25rem;
+        }
+    }
+</style>
+
+<script>
+    const rolDescripciones = {
+        'Administrador': 'Acceso completo al panel. Puede gestionar obras, empleados, presupuestos y usuarios. Solo asignar a personas de confianza.',
+        'Capataz':       'Accede a su panel de obra: carga avances, ve novedades de su equipo, registra horas. No gestiona otros usuarios ni finanzas.',
+        'Empleado':      'Acceso básico: carga sus propias horas y reporta novedades. No ve datos de otros empleados ni información financiera.',
+    };
+
+    (function () {
+        // ── Filtros en tabla activos
+        const search    = document.getElementById('bpSearch');
+        const filtroRol = document.getElementById('bpFiltroRol');
+        const rows      = Array.from(document.querySelectorAll('#bpTbody tr'));
+        const empty     = document.getElementById('bpEmpty');
+
+        function aplicarFiltros() {
+            const txt = search.value.trim().toLowerCase();
+            const rol = filtroRol.value;
+            let vis = 0;
+            rows.forEach(r => {
+                const ok = (!txt || r.dataset.search.includes(txt))
+                        && (!rol || r.dataset.rol === rol);
+                r.classList.toggle('d-none', !ok);
+                if (ok) vis++;
+            });
+            empty.classList.toggle('d-none', vis > 0);
+        }
+        search.addEventListener('input', aplicarFiltros);
+        filtroRol.addEventListener('change', aplicarFiltros);
+
+        // ── Aprobar usuario pendiente
+        window.aprobar = function(id, email) {
+            const rolSel = document.getElementById(`rol-${id}`);
+            const empSel = document.getElementById(`emp-${id}`);
+            if (!rolSel.value) {
+                rolSel.style.borderColor = 'var(--bp-danger)';
+                rolSel.focus();
+                return;
+            }
+            // TODO: conectar a OnPostAprobarUsuario(id, rolSel.value, empSel?.value) via HttpClient hacia la API
+            console.log(`Aprobar usuario ${id} con rol ${rolSel.value}, empleado: ${empSel?.value || 'ninguno'}`);
+            // Feedback visual optimista
+            document.getElementById(`rol-${id}`)?.closest('.col-12.col-md-6.col-xl-4')?.remove();
+        };
+
+        // ── Rechazar acceso
+        window.rechazarAcceso = function(id, email) {
+            abrirConfirmar(
+                'Rechazar acceso',
+                `¿Rechazás el registro de <strong>${email}</strong>?<br>
+                 <small style="color:var(--bp-steel)">El usuario no podrá acceder al sistema.</small>`,
+                '#B23A2E', 'Rechazar',
+                // TODO: conectar a OnPostRechazarUsuario(id)
+                () => console.log(`Rechazar ${id}`)
+            );
+        };
+
+        // ── Suspender
+        window.suspender = function(id, email) {
+            abrirConfirmar(
+                'Suspender usuario',
+                `¿Suspendés el acceso de <strong>${email}</strong>?<br>
+                 <small style="color:var(--bp-steel)">Podrás reactivarlo cuando quieras.</small>`,
+                '#F2A900', 'Suspender',
+                // TODO: conectar a OnPostSuspenderUsuario(id)
+                () => console.log(`Suspender ${id}`)
+            );
+        };
+
+        // ── Reactivar
+        window.reactivar = function(id, email) {
+            abrirConfirmar(
+                'Reactivar usuario',
+                `¿Reactivás el acceso de <strong>${email}</strong>?`,
+                '#2E7D52', 'Reactivar',
+                // TODO: conectar a OnPostReactivarUsuario(id)
+                () => console.log(`Reactivar ${id}`)
+            );
+        };
+
+        // ── Cambiar rol
+        window.cambiarRol = function(id, email, rolActual) {
+            const hint   = document.getElementById('cambiarRolHint');
+            const select = document.getElementById('cambiarRolSelect');
+            const desc   = document.getElementById('rolDesc');
+
+            hint.textContent = email;
+            select.value     = rolActual || '';
+            desc.textContent = rolDescripciones[rolActual] || '';
+
+            select.addEventListener('change', () => {
+                desc.textContent = rolDescripciones[select.value] || '';
+            }, { once: false });
+
+            document.getElementById('btnConfirmarRol').onclick = () => {
+                // TODO: conectar a OnPostCambiarRol(id, select.value) via HttpClient
+                console.log(`Cambiar rol ${id} a ${select.value}`);
+                bootstrap.Modal.getInstance(document.getElementById('modalCambiarRol')).hide();
+            };
+
+            new bootstrap.Modal(document.getElementById('modalCambiarRol')).show();
+        };
+
+        // ── Helper modal de confirmación
+        function abrirConfirmar(titulo, msg, color, btnLabel, callback) {
+            document.getElementById('confirmarHeader').style.background = color === '#F2A900' ? 'var(--bp-blueprint)' : color;
+            document.getElementById('confirmarTitulo').textContent = titulo;
+            document.getElementById('confirmarMsg').innerHTML = msg;
+            const btn = document.getElementById('btnConfirmar');
+            btn.textContent = btnLabel;
+            btn.style.background = color;
+            btn.onclick = () => {
+                callback();
+                bootstrap.Modal.getInstance(document.getElementById('modalConfirmar')).hide();
+            };
+            new bootstrap.Modal(document.getElementById('modalConfirmar')).show();
+        }
+    })();
+</script>

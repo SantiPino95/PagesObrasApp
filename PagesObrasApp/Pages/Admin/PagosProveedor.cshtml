@@ -1,0 +1,700 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.PagosProveedorModel
+@using System.Linq
+@using System.Globalization
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Pagos a Proveedor";
+
+    var today = new DateTime(2026, 6, 22);
+    var cultura = new CultureInfo("es-UY");
+
+    // --- Datos de muestra (mock) — reemplazar por Model.* cuando conectemos la API vía DTOs ---
+    var proveedores = new[]
+    {
+        new { Id=1, Nombre="Materiales del Norte S.A." },
+        new { Id=2, Nombre="Distribuidora Ferpal"      },
+        new { Id=3, Nombre="Hierros Uruguay S.A."      },
+        new { Id=4, Nombre="Pinturas Rex"              },
+        new { Id=5, Nombre="Alquileres Técnicos SRL"   },
+    };
+
+    var metodos = new[] { "Transferencia", "Cheque", "Efectivo", "Débito" };
+
+    var pagos = new[]
+    {
+        new { Id=1,  IdProv=1, Fecha=new DateTime(2026,4,15), Monto=45000m,  Metodo="Transferencia" },
+        new { Id=2,  IdProv=3, Fecha=new DateTime(2026,4,28), Monto=98000m,  Metodo="Transferencia" },
+        new { Id=3,  IdProv=2, Fecha=new DateTime(2026,5,10), Monto=28500m,  Metodo="Cheque"        },
+        new { Id=4,  IdProv=5, Fecha=new DateTime(2026,5,20), Monto=18000m,  Metodo="Transferencia" },
+        new { Id=5,  IdProv=1, Fecha=new DateTime(2026,5,28), Monto=32000m,  Metodo="Transferencia" },
+        new { Id=6,  IdProv=3, Fecha=new DateTime(2026,6,5),  Monto=98000m,  Metodo="Transferencia" },
+        new { Id=7,  IdProv=2, Fecha=new DateTime(2026,6,10), Monto=24000m,  Metodo="Débito"        },
+        new { Id=8,  IdProv=5, Fecha=new DateTime(2026,6,15), Monto=43800m,  Metodo="Transferencia" },
+        new { Id=9,  IdProv=4, Fecha=new DateTime(2026,6,18), Monto=9800m,   Metodo="Efectivo"      },
+        new { Id=10, IdProv=1, Fecha=new DateTime(2026,6,20), Monto=65000m,  Metodo="Transferencia" },
+    };
+
+    var vistaP = pagos.Select(p => new
+    {
+        p.Id,
+        p.IdProv,
+        p.Fecha,
+        p.Monto,
+        p.Metodo,
+        Prov = proveedores.FirstOrDefault(x => x.Id == p.IdProv),
+        EsMesAct = p.Fecha.Year == today.Year && p.Fecha.Month == today.Month,
+    }).OrderByDescending(p => p.Fecha).ToList();
+
+    var totalPagado = pagos.Sum(p => p.Monto);
+    var pagosMes = pagos.Where(p => p.Fecha.Year == today.Year && p.Fecha.Month == today.Month).Sum(p => p.Monto);
+    var cantidadMes = pagos.Count(p => p.Fecha.Year == today.Year && p.Fecha.Month == today.Month);
+
+    var resumenProv = proveedores.Select(p => new
+    {
+        p.Id,
+        p.Nombre,
+        TotalPagado = pagos.Where(x => x.IdProv == p.Id).Sum(x => x.Monto),
+        CantPagos = pagos.Count(x => x.IdProv == p.Id),
+    }).Where(p => p.CantPagos > 0).OrderByDescending(p => p.TotalPagado).ToList();
+
+    var metodoCounts = pagos.GroupBy(p => p.Metodo)
+                            .Select(g => new { Metodo = g.Key, Total = g.Sum(x => x.Monto), Cant = g.Count() })
+                            .OrderByDescending(x => x.Total).ToList();
+
+    var mesesConDatos = pagos.Select(p => new DateTime(p.Fecha.Year, p.Fecha.Month, 1))
+                             .Distinct().OrderByDescending(m => m).ToList();
+}
+
+<div class="admin-dashboard">
+
+    <!-- HEADER -->
+    <section class="bp-section">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-2">
+            <div>
+                <span class="bp-eyebrow">Gestión de compras</span>
+                <h1 class="bp-title bp-title-dark">Pagos a proveedores</h1>
+            </div>
+            <button type="button" class="bp-btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoPago">
+                + Registrar pago
+            </button>
+        </div>
+    </section>
+
+    <!-- STAT CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="bp-stat-card">
+                <span class="bp-stat-label">Total pagado</span>
+                <span class="bp-stat-num" style="font-size:1.6rem">$@totalPagado.ToString("N0")</span>
+                <span class="bp-stat-sub">@pagos.Length pagos registrados</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="bp-stat-card bp-stat-card--accent">
+                <span class="bp-stat-label">@today.ToString("MMMM yyyy", cultura)</span>
+                <span class="bp-stat-num bp-stat-num--amber" style="font-size:1.6rem">$@pagosMes.ToString("N0")</span>
+                <span class="bp-stat-sub">@cantidadMes pago@(cantidadMes != 1 ? "s" : "") este mes</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="bp-stat-card">
+                <span class="bp-stat-label">Proveedores pagados</span>
+                <span class="bp-stat-num">@resumenProv.Count</span>
+                <span class="bp-stat-sub">de @proveedores.Length registrados</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <!-- Resumen por proveedor -->
+        <div class="col-12 col-lg-7">
+            <div class="bp-panel">
+                <span class="bp-eyebrow mb-3 d-block">Por proveedor</span>
+                @foreach (var p in resumenProv)
+                {
+                    var pct = totalPagado > 0 ? (int)Math.Round(p.TotalPagado / totalPagado * 100) : 0;
+                    <div class="bp-prov-row">
+                        <div class="bp-prov-info">
+                            <span class="bp-prov-nombre">@p.Nombre</span>
+                            <span class="bp-mono bp-steel">@p.CantPagos pago@(p.CantPagos != 1 ? "s" : "")</span>
+                        </div>
+                        <div class="bp-prov-bar-wrap">
+                            <div class="bp-prov-bar">
+                                <div class="bp-prov-fill" style="width:@pct%"></div>
+                            </div>
+                            <span class="bp-mono" style="font-size:.75rem;min-width:75px;text-align:right">
+                                $@p.TotalPagado.ToString("N0")
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Resumen por método de pago -->
+        <div class="col-12 col-lg-5">
+            <div class="bp-panel">
+                <span class="bp-eyebrow mb-3 d-block">Por método de pago</span>
+                @foreach (var m in metodoCounts)
+                {
+                    var metCls = m.Metodo.ToLower().Replace(" ", "").Replace("é", "e");
+                    <div class="bp-metodo-row">
+                        <span class="bp-metodo-badge bp-metodo-badge--@metCls">@m.Metodo</span>
+                        <span class="bp-mono" style="font-size:.78rem;color:var(--bp-steel)">
+                            @m.Cant pago@(m.Cant != 1 ? "s" : "")
+                        </span>
+                        <span class="bp-monto-sm">$@m.Total.ToString("N0")</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FILTROS -->
+    <div class="bp-filterbar mb-3">
+        <input type="text" id="bpSearch" class="bp-input" placeholder="Buscar proveedor...">
+        <select id="bpFiltroProv" class="bp-select">
+            <option value="">Todos los proveedores</option>
+            @foreach (var p in proveedores)
+            {
+                <option value="@p.Id">@p.Nombre</option>
+            }
+        </select>
+        <select id="bpFiltroMes" class="bp-select">
+            <option value="">Todos los meses</option>
+            @foreach (var m in mesesConDatos)
+            {
+                <option value="@m.ToString("yyyy-MM")">@m.ToString("MMMM yyyy", cultura)</option>
+            }
+        </select>
+        <select id="bpFiltroMetodo" class="bp-select">
+            <option value="">Todos los métodos</option>
+            @foreach (var met in metodos)
+            {
+                <option value="@met.ToLower()">@met</option>
+            }
+        </select>
+    </div>
+
+    <!-- TABLA -->
+    <div class="bp-table-wrap">
+        <table class="bp-table">
+            <thead>
+                <tr>
+                    <th>N° Pago</th>
+                    <th>Proveedor</th>
+                    <th>Fecha</th>
+                    <th>Método</th>
+                    <th class="text-end">Monto</th>
+                </tr>
+            </thead>
+            <tbody id="bpTbody">
+                @foreach (var p in vistaP)
+                {
+                    var metCls = p.Metodo.ToLower().Replace(" ", "").Replace("é", "e");
+                    <tr data-prov="@p.IdProv"
+                        data-mes="@p.Fecha.ToString("yyyy-MM")"
+                        data-metodo="@p.Metodo.ToLower()"
+                        data-search="@p.Prov?.Nombre.ToLower()">
+                        <td class="bp-mono bp-steel">PAG-@p.Id.ToString("D4")</td>
+                        <td class="bp-strong">@p.Prov?.Nombre</td>
+                        <td class="bp-mono">@p.Fecha.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            <span class="bp-metodo-badge bp-metodo-badge--@metCls">@p.Metodo</span>
+                        </td>
+                        <td class="text-end bp-monto">$@p.Monto.ToString("N0")</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="bp-total-row">
+                    <td colspan="4" class="bp-total-label">Total visible</td>
+                    <td class="text-end bp-total-num" id="bpTotalVisible">
+                        $@pagos.Sum(p => p.Monto).ToString("N0")
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+        <p id="bpEmpty" class="bp-empty d-none">No hay pagos que coincidan.</p>
+    </div>
+    <p class="bp-count mt-2">Mostrando <span id="bpCount">@pagos.Length</span> de @pagos.Length pagos</p>
+
+</div>
+
+<!-- MODAL: Nuevo pago -->
+<div class="modal fade" id="modalNuevoPago" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bp-modal">
+            <div class="modal-header bp-modal-header">
+                <div>
+                    <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Alta de pago</span>
+                    <h5 class="modal-title bp-title">Registrar pago a proveedor</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bp-modal-body">
+                <!-- TODO: conectar a OnPostRegistrarPago cuando esté el HttpClient hacia la API -->
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="bp-label">Proveedor</label>
+                        <select class="bp-select w-100">
+                            <option value="">Seleccionar proveedor...</option>
+                            @foreach (var p in proveedores)
+                            {
+                                <option value="@p.Id">@p.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="bp-label">Fecha de pago</label>
+                        <input type="date" class="bp-input w-100" value="@today.ToString("yyyy-MM-dd")">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="bp-label">Método de pago</label>
+                        <select class="bp-select w-100">
+                            <option value="">Seleccionar método...</option>
+                            @foreach (var m in metodos)
+                            {
+                                <option value="@m">@m</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="bp-label">Monto ($)</label>
+                        <input type="number" min="0.01" step="0.01" class="bp-input w-100" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bp-modal-footer">
+                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="bp-btn-primary">Guardar pago</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .admin-dashboard {
+        --bp-blueprint: #1B3A5C;
+        --bp-blueprint-light: #2D5C8C;
+        --bp-concrete: #F1EFEA;
+        --bp-steel: #5B6670;
+        --bp-safety: #F2A900;
+        --bp-ink: #181B1F;
+        --bp-line: #D8D3C8;
+        --bp-ok: #2E7D52;
+        font-family: 'Inter', sans-serif;
+        color: var(--bp-ink);
+    }
+
+        .admin-dashboard .bp-eyebrow {
+            font-family: 'JetBrains Mono',monospace;
+            font-size: .72rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+        }
+
+    .bp-title {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-weight: 600;
+        letter-spacing: .01em;
+        margin: .15rem 0;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .bp-title-dark {
+        font-size: 2rem;
+        color: var(--bp-ink);
+    }
+
+    .bp-section {
+        margin-bottom: 1.75rem;
+    }
+
+    .bp-mono {
+        font-family: 'JetBrains Mono',monospace;
+        font-size: .82rem;
+    }
+
+    .bp-steel {
+        color: var(--bp-steel);
+    }
+
+    .bp-strong {
+        font-weight: 600;
+    }
+
+    .bp-btn-primary {
+        font-family: 'Inter',sans-serif;
+        font-weight: 600;
+        font-size: .88rem;
+        background: var(--bp-safety);
+        color: var(--bp-ink);
+        border: none;
+        border-radius: 6px;
+        padding: .55rem 1.1rem;
+        cursor: pointer;
+        transition: background .2s;
+    }
+
+        .bp-btn-primary:hover {
+            background: #d99500;
+        }
+
+    .bp-btn-ghost {
+        font-family: 'Inter',sans-serif;
+        font-weight: 500;
+        font-size: .88rem;
+        background: transparent;
+        color: var(--bp-steel);
+        border: 1px solid var(--bp-line);
+        border-radius: 6px;
+        padding: .55rem 1.1rem;
+        cursor: pointer;
+    }
+
+        .bp-btn-ghost:hover {
+            border-color: var(--bp-steel);
+            color: var(--bp-ink);
+        }
+
+    .bp-stat-card {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        padding: 1rem 1.1rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+    }
+
+    .bp-stat-card--accent {
+        border-left: 3px solid var(--bp-safety);
+    }
+
+    .bp-stat-label {
+        font-family: 'JetBrains Mono',monospace;
+        font-size: .68rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+    }
+
+    .bp-stat-num {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--bp-ink);
+        line-height: 1.1;
+    }
+
+    .bp-stat-num--amber {
+        color: var(--bp-safety);
+    }
+
+    .bp-stat-sub {
+        font-size: .75rem;
+        color: var(--bp-steel);
+    }
+
+    /* Panel resumen */
+    .bp-panel {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        padding: 1.1rem;
+        height: 100%;
+    }
+
+    .bp-prov-row {
+        display: flex;
+        flex-direction: column;
+        gap: .3rem;
+        margin-bottom: .9rem;
+    }
+
+        .bp-prov-row:last-child {
+            margin-bottom: 0;
+        }
+
+    .bp-prov-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+    }
+
+    .bp-prov-nombre {
+        font-weight: 600;
+        font-size: .85rem;
+    }
+
+    .bp-prov-bar-wrap {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+    }
+
+    .bp-prov-bar {
+        flex: 1;
+        height: 6px;
+        background: var(--bp-concrete);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .bp-prov-fill {
+        height: 100%;
+        background: var(--bp-blueprint-light);
+        border-radius: 3px;
+    }
+
+    .bp-metodo-row {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .5rem 0;
+        border-bottom: 1px dashed var(--bp-line);
+    }
+
+        .bp-metodo-row:last-child {
+            border-bottom: none;
+        }
+
+    .bp-monto-sm {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-weight: 700;
+        font-size: .95rem;
+        margin-left: auto;
+    }
+
+    /* Badges de método */
+    .bp-metodo-badge {
+        font-size: .72rem;
+        font-weight: 600;
+        padding: .18rem .55rem;
+        border-radius: 100px;
+        white-space: nowrap;
+    }
+
+    .bp-metodo-badge--transferencia {
+        background: #E8EFF6;
+        color: var(--bp-blueprint);
+    }
+
+    .bp-metodo-badge--cheque {
+        background: #EAF4EE;
+        color: var(--bp-ok);
+    }
+
+    .bp-metodo-badge--efectivo {
+        background: #FFF8E8;
+        color: #92670a;
+    }
+
+    .bp-metodo-badge--debito {
+        background: #EAECEE;
+        color: var(--bp-steel);
+    }
+
+    /* Filtros */
+    .bp-filterbar {
+        display: flex;
+        gap: .75rem;
+        flex-wrap: wrap;
+    }
+
+    .bp-input, .bp-select {
+        font-family: 'Inter',sans-serif;
+        font-size: .88rem;
+        border: 1px solid var(--bp-line);
+        border-radius: 6px;
+        padding: .5rem .8rem;
+        background: #fff;
+        color: var(--bp-ink);
+    }
+
+        .bp-input:focus, .bp-select:focus {
+            outline: none;
+            border-color: var(--bp-blueprint-light);
+            box-shadow: 0 0 0 3px rgba(45,92,140,.12);
+        }
+
+    #bpSearch {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    /* Tabla */
+    .bp-table-wrap {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .bp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .88rem;
+    }
+
+        .bp-table thead th {
+            font-family: 'JetBrains Mono',monospace;
+            font-size: .68rem;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+            text-align: left;
+            padding: .75rem 1rem;
+            background: var(--bp-concrete);
+            border-bottom: 1px solid var(--bp-line);
+        }
+
+        .bp-table tbody td {
+            padding: .72rem 1rem;
+            border-bottom: 1px solid var(--bp-line);
+            vertical-align: middle;
+        }
+
+        .bp-table tbody tr:hover {
+            background: #fafaf8;
+        }
+
+        .bp-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+    .bp-monto {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .bp-total-row td {
+        padding: .75rem 1rem;
+        background: var(--bp-concrete);
+        border-top: 2px solid var(--bp-line);
+    }
+
+    .bp-total-label {
+        font-family: 'JetBrains Mono',monospace;
+        font-size: .68rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+    }
+
+    .bp-total-num {
+        font-family: 'Barlow Condensed',sans-serif;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: var(--bp-blueprint);
+    }
+
+    .bp-empty {
+        text-align: center;
+        padding: 2rem;
+        color: var(--bp-steel);
+        margin: 0;
+    }
+
+    .bp-count {
+        font-size: .8rem;
+        color: var(--bp-steel);
+    }
+
+    /* Modal */
+    .bp-modal {
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .bp-modal-header {
+        background: var(--bp-blueprint);
+        border: none;
+        padding: 1.25rem 1.5rem;
+    }
+
+        .bp-modal-header .bp-title {
+            color: #fff;
+            font-size: 1.4rem;
+        }
+
+    .bp-modal-body {
+        padding: 1.5rem;
+        background: var(--bp-concrete);
+    }
+
+    .bp-modal-footer {
+        border-top: 1px solid var(--bp-line);
+        padding: 1rem 1.5rem;
+    }
+
+    .bp-label {
+        display: block;
+        font-family: 'JetBrains Mono',monospace;
+        font-size: .68rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--bp-steel);
+        margin-bottom: .3rem;
+    }
+
+    @@media (max-width:576px) {
+        .bp-filterbar {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        const fmt = n => '$' + Math.round(n).toLocaleString('es-UY');
+
+        const search       = document.getElementById('bpSearch');
+        const filtroProv   = document.getElementById('bpFiltroProv');
+        const filtroMes    = document.getElementById('bpFiltroMes');
+        const filtroMetodo = document.getElementById('bpFiltroMetodo');
+        const rows         = Array.from(document.querySelectorAll('#bpTbody tr'));
+        const empty        = document.getElementById('bpEmpty');
+        const count        = document.getElementById('bpCount');
+        const totalVis     = document.getElementById('bpTotalVisible');
+
+        function aplicarFiltros() {
+            const txt    = search.value.trim().toLowerCase();
+            const prov   = filtroProv.value;
+            const mes    = filtroMes.value;
+            const metodo = filtroMetodo.value;
+            let vis = 0, suma = 0;
+
+            rows.forEach(r => {
+                const ok = (!txt    || r.dataset.search.includes(txt))
+                        && (!prov   || r.dataset.prov   === prov)
+                        && (!mes    || r.dataset.mes    === mes)
+                        && (!metodo || r.dataset.metodo.includes(metodo));
+                r.classList.toggle('d-none', !ok);
+                if (ok) {
+                    vis++;
+                    suma += parseInt(r.querySelector('.bp-monto')?.textContent.replace(/[$.,\s]/g,'')) || 0;
+                }
+            });
+
+            count.textContent    = vis;
+            totalVis.textContent = fmt(suma);
+            empty.classList.toggle('d-none', vis > 0);
+        }
+
+        search.addEventListener('input', aplicarFiltros);
+        filtroProv.addEventListener('change', aplicarFiltros);
+        filtroMes.addEventListener('change', aplicarFiltros);
+        filtroMetodo.addEventListener('change', aplicarFiltros);
+    })();
+</script>
