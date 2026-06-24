@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace PagesObrasApp.Pages.Admin
 {
-    public class OrdenCompraModel : PageModel
+    public class PagosProveedorModel : PageModel
     {
         public void OnGet()
         {
