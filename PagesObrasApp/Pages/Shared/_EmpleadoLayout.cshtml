@@ -1,0 +1,234 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — Mi Panel</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+            :root {
+                --bp-blueprint: #1B3A5C;
+                --bp-blueprint-light: #2D5C8C;
+                --bp-blueprint-dark: #122840;
+                --bp-concrete: #F1EFEA;
+                --bp-steel: #5B6670;
+                --bp-safety: #F2A900;
+                --bp-ink: #181B1F;
+                --bp-line: #D8D3C8;
+                --bp-ok: #2E7D52;
+                --bp-topbar-h: 54px;
+                --bp-bottomnav-h: 60px;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                font-family: 'Inter', sans-serif;
+                background: var(--bp-concrete);
+                color: var(--bp-ink);
+                min-height: 100vh;
+                padding-bottom: var(--bp-bottomnav-h);
+            }
+
+            /* ── TOPBAR ── */
+            .bp-topbar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: var(--bp-topbar-h);
+                background: var(--bp-blueprint-dark);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 1rem;
+                z-index: 100;
+                border-bottom: 1px solid rgba(255,255,255,.07);
+            }
+
+            .bp-topbar-left {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .bp-brand {
+                font-family: 'Barlow Condensed', sans-serif;
+                font-weight: 700;
+                font-size: .95rem;
+                color: rgba(255,255,255,.5);
+                letter-spacing: .05em;
+            }
+
+            .bp-topbar-user {
+                font-family: 'Inter', sans-serif;
+                font-weight: 600;
+                font-size: .9rem;
+                color: #fff;
+            }
+
+            .bp-topbar-right {
+                display: flex;
+                align-items: center;
+                gap: .75rem;
+            }
+
+            .bp-obra-chip {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: .68rem;
+                background: rgba(255,255,255,.1);
+                color: rgba(255,255,255,.75);
+                border-radius: 5px;
+                padding: .2rem .55rem;
+                border: 1px solid rgba(255,255,255,.15);
+                max-width: 160px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .bp-logout {
+                font-size: .78rem;
+                color: rgba(255,255,255,.6);
+                border: 1px solid rgba(255,255,255,.2);
+                border-radius: 5px;
+                padding: .28rem .65rem;
+                text-decoration: none;
+                transition: all .15s;
+            }
+
+                .bp-logout:hover {
+                    color: #fff;
+                    border-color: rgba(255,255,255,.5);
+                }
+
+            /* ── BOTTOM NAV ── */
+            .bp-bottomnav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: var(--bp-bottomnav-h);
+                background: #fff;
+                border-top: 1px solid var(--bp-line);
+                display: flex;
+                z-index: 100;
+            }
+
+            .bp-nav-btn {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 3px;
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--bp-steel);
+                font-family: 'Inter', sans-serif;
+                font-size: .68rem;
+                font-weight: 500;
+                text-decoration: none;
+                transition: color .15s, background .15s;
+                border-top: 2px solid transparent;
+            }
+
+                .bp-nav-btn:hover {
+                    background: var(--bp-concrete);
+                    color: var(--bp-blueprint);
+                }
+
+                .bp-nav-btn.active {
+                    color: var(--bp-blueprint);
+                    border-top-color: var(--bp-safety);
+                }
+
+                .bp-nav-btn svg {
+                    width: 20px;
+                    height: 20px;
+                    fill: none;
+                    stroke: currentColor;
+                    stroke-width: 1.8;
+                    stroke-linecap: round;
+                    stroke-linejoin: round;
+                }
+
+            /* ── CONTENIDO ── */
+            .bp-content {
+                margin-top: var(--bp-topbar-h);
+                padding: 1.25rem 1rem 1.5rem;
+                max-width: 700px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            @@media (min-width: 768px) {
+                body {
+                    padding-bottom: 0;
+                }
+
+                .bp-bottomnav {
+                    display: none;
+                }
+
+                .bp-topbar {
+                    padding: 0 1.5rem;
+                }
+
+                .bp-content {
+                    padding: 1.75rem 1.5rem;
+                    max-width: 860px;
+                }
+            }
+    </style>
+</head>
+<body>
+
+    <!-- TOPBAR -->
+    <header class="bp-topbar">
+        <div class="bp-topbar-left">
+            <span class="bp-brand">Constructora · Panel Empleado</span>
+            <span class="bp-topbar-user">Carlos Espínola</span>
+        </div>
+        <div class="bp-topbar-right">
+            <span class="bp-obra-chip">Edificio Las Acacias</span>
+            <a href="/Auth/Login" class="bp-logout">Salir</a>
+        </div>
+    </header>
+
+    <!-- CONTENIDO -->
+    <div class="bp-content">
+        <main>@RenderBody()</main>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bp-bottomnav">
+        <a href="/Empleado" class="bp-nav-btn" id="navInicio">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+            Inicio
+        </a>
+        <a href="/Empleado/RegistroHoras" class="bp-nav-btn" id="navHoras">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            Mis horas
+        </a>
+        <a href="/Empleado/Novedades" class="bp-nav-btn" id="navNovedades">
+            <svg viewBox="0 0 24 24"><path d="M12 3l10 18H2L12 3z" /><path d="M12 9v5M12 17h.01" /></svg>
+            Novedades
+        </a>
+    </nav>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Marcar nav activo según URL
+        const path = window.location.pathname.replace(/\/$/, '');
+        if (path === '/Empleado' || path === '/Empleado/Index') document.getElementById('navInicio').classList.add('active');
+        if (path.includes('/Empleado/RegistroHoras')) document.getElementById('navHoras').classList.add('active');
+        if (path.includes('/Empleado/Novedades'))    document.getElementById('navNovedades').classList.add('active');
+    </script>
+</body>
+</html>
