@@ -7,72 +7,132 @@ namespace PagesObrasApp.Pages
 {
     public class IndexModel : PageModel
     {
-        private readonly IHttpClientFactory _httpClientFactory;
+        // ── Propiedades que lee la vista ──────────────────────────────────
 
-        public IndexModel (IHttpClientFactory httpClientFactory) 
+        // Mensaje de error que aparece en el tab activo
+        public string? ErrorMessage { get; set; }
+
+        // Le dice al JS qué tab abrir cuando hay un error tras el POST
+        // Valores posibles: "cliente" | "empleado" | "registro"
+        public string ActiveTab { get; set; } = "cliente";
+
+        // Mensaje de éxito tras registro (se muestra en tab empleado)
+        [TempData]
+        public string? RegistroExitoso { get; set; }
+
+
+        // ── GET ───────────────────────────────────────────────────────────
+
+        public void OnGet()
         {
-            _httpClientFactory = httpClientFactory;
+            // Si viene de un registro exitoso, abrir tab de login con mensaje
+            if (!string.IsNullOrEmpty(RegistroExitoso))
+            {
+                ActiveTab = "empleado";
+                ErrorMessage = RegistroExitoso; // reutilizamos el campo para el aviso verde
+            }
         }
 
-        [BindProperty]
-        public string CodigoObra { get; set; }
 
-        public string ErrorMessage { get; set; }
+        // ── POST: Buscar obra (tab Cliente) ───────────────────────────────
 
-        public async Task<IActionResult> OnPostBuscarObraAsync(string codigoObra)
+        public IActionResult OnPostBuscarObra(string codigoObra)
         {
-            if (string.IsNullOrEmpty(codigoObra))
+            ActiveTab = "cliente";
+
+            if (string.IsNullOrWhiteSpace(codigoObra))
             {
-                ErrorMessage = "Por favor, ingrese un código de obra.";
+                ErrorMessage = "Ingresá el código de tu obra.";
                 return Page();
             }
 
-            // Llamar a la API para verificar si el código existe
-            var client = _httpClientFactory.CreateClient("API");
+            var codigo = codigoObra.Trim().ToUpper();
 
-            try
+            // TODO: reemplazar por llamada al HttpClient hacia la API
+            // GET /api/obras/publico/{codigo}
+            var codigosValidos = new[]
             {
-                var response = await client.GetAsync($"/api/obras/por-codigo/{codigoObra}");
+                "OB-2026-014",
+                "OB-2026-002",
+                "OB-2026-011",
+                "OB-2026-019",
+                "OB-2025-087",
+            };
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync();
-                    var obra = JsonSerializer.Deserialize<ObraDto>(json, new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
-
-                    if (obra != null)
-                    {
-                        // Guardar el código en sesión o tempdata
-                        TempData["CodigoObra"] = codigoObra;
-                        TempData["ObraId"] = obra.Id_Obra;
-
-                        // Redirigir a la página de seguimiento del cliente
-                        return RedirectToPage("/Cliente/Seguimiento");
-                    }
-                }
-
-                ErrorMessage = "Código de obra no válido. Verifique e intente nuevamente.";
+            if (!codigosValidos.Contains(codigo))
+            {
+                ErrorMessage = $"No encontramos ninguna obra con el código \"{codigoObra.ToUpper()}\". "
+                             + "Verificá que sea correcto o pedíselo al administrador.";
                 return Page();
             }
-            catch (Exception ex)
-            {
-                ErrorMessage = "Error al conectar con el servidor. Intente más tarde.";
-                return Page();
-            }
+
+            // Código válido → redirigir a la página de seguimiento del cliente
+            return RedirectToPage("/Cliente/Seguimiento", new { codigo });
         }
-    }
 
-    // DTO para recibir datos de la API
-    public class ObraDto
-    {
-        public int Id_Obra { get; set; }
-        public string Nombre_Obra { get; set; }
-        public string Codigo_Publico { get; set; }
-        public string Direccion { get; set; }
-        public DateTime Fecha_Inicio { get; set; }
-        public DateTime? Fecha_Fin_Prevista { get; set; }
-        public string Estado { get; set; }
+
+        // ── POST: Login (tab Iniciar sesión) ──────────────────────────────
+
+        public IActionResult OnPostLogin(string email, string password)
+        {
+            ActiveTab = "empleado";
+
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            {
+                ErrorMessage = "Completá email y contraseña.";
+                return Page();
+            }
+
+            // TODO: reemplazar por llamada al HttpClient hacia la API
+            // POST /api/auth/login → devuelve { rol, token/cookie }
+            // Por ahora, credencial hardcodeada para pruebas
+            if (email == "admin@constructora.com" && password == "UTU2026")
+            {
+                // TODO: setear cookie de autenticación con el rol
+                return RedirectToPage("/Admin/Index");
+            }
+
+            // Cualquier otra combinación → acceso denegado por ahora
+            ErrorMessage = "Credenciales incorrectas. Verificá tu email y contraseña.";
+            return Page();
+        }
+
+
+        // ── POST: Registro (tab Registrarse) ──────────────────────────────
+
+        public IActionResult OnPostRegistro(string email, string password, string confirmPassword)
+        {
+            ActiveTab = "registro";
+
+            // Validaciones básicas del lado cliente (el servidor repite las mismas)
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                ErrorMessage = "El email es obligatorio.";
+                return Page();
+            }
+
+            if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+            {
+                ErrorMessage = "La contraseña debe tener al menos 8 caracteres.";
+                return Page();
+            }
+
+            if (password != confirmPassword)
+            {
+                ErrorMessage = "Las contraseñas no coinciden.";
+                return Page();
+            }
+
+            // TODO: reemplazar por llamada al HttpClient hacia la API
+            // POST /api/auth/registro → crea Usuario con Estado = "Pendiente"
+            // La API devuelve 201 si el email no existe, 409 si ya está registrado
+
+            // Simulación de email ya registrado para pruebas:
+            // if (email == "ya@registrado.com") { ErrorMessage = "Ya existe una cuenta con ese email."; return Page(); }
+
+            // Registro exitoso → redirigir al index abriendo tab de login con aviso
+            RegistroExitoso = "✓ Cuenta creada. Esperá la aprobación del administrador para poder ingresar.";
+            return RedirectToPage("/Index");
+        }
     }
 }
