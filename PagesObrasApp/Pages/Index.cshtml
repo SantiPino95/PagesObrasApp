@@ -1,8 +1,16 @@
 ﻿@page
 @model IndexModel
+@* En el bloque @{ } del Index, agregar: *@
 @{
     Layout = null;
     ViewData["Title"] = "Constructora Pages y Familia";
+
+    // Recoger error si viene de Seguimiento por código inválido
+    var errorCodigo = Request.Query["errorCodigo"].ToString();
+    if (!string.IsNullOrEmpty(errorCodigo) && string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        Model.ErrorMessage = $"No encontramos la obra \"{errorCodigo}\". Verificá el código.";
+    }
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -806,10 +814,16 @@
         }
         };
 
-        // Si hay error en la búsqueda, activar tab cliente automáticamente
-        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-        {
-            @:cambiarTabPorNombre('cliente');
+        // Activar el tab correcto si hay error o mensaje
+        const tabInicial = '@Model.ActiveTab';
+        if (tabInicial !== 'cliente' || '@(!string.IsNullOrEmpty(Model.ErrorMessage))' === 'True') {
+        cambiarTabPorNombre(tabInicial);
+        }
+
+        // Recoger error de código inválido que viene por querystring
+        const errorCodigo = new URLSearchParams(window.location.search).get('errorCodigo');
+        if (errorCodigo) {
+        cambiarTabPorNombre('cliente');
         }
     </script>
 
