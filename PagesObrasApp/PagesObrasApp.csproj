@@ -8,13 +8,9 @@
 
   <ItemGroup>
     <Compile Remove="DTOs\**" />
-    <Compile Remove="Services\**" />
     <Content Remove="DTOs\**" />
-    <Content Remove="Services\**" />
     <EmbeddedResource Remove="DTOs\**" />
-    <EmbeddedResource Remove="Services\**" />
     <None Remove="DTOs\**" />
-    <None Remove="Services\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +24,10 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="MySql.Data" Version="9.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>
