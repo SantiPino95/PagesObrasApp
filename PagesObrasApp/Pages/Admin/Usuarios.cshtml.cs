@@ -2,117 +2,122 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PagesObrasApp.Models;
+using PagesObrasApp.Services;
 
 namespace PagesObrasApp.Pages.Admin
 {
     [Authorize(Policy = "SoloAdmin")]
     public class UsuariosModel : PageModel
     {
-        public List<UsuarioDto> Pendientes { get; set; } = new();
-        public List<UsuarioDto> Activos { get; set; } = new();
-        public List<UsuarioDto> Suspendidos { get; set; } = new();
-        public List<EmpleadoDto> EmpleadosSinUsuario { get; set; } = new();
+        private readonly IUsuarioHttpService _usuarioHttpService;
+        private readonly IEmpleadoHttpService _empleadoHttpService;
 
         public static readonly string[] Roles = { "Administrador", "Capataz", "Empleado" };
+
+        public UsuariosModel(
+            IUsuarioHttpService usuarioHttpService,
+            IEmpleadoHttpService empleadoHttpService)
+        {
+            _usuarioHttpService = usuarioHttpService;
+            _empleadoHttpService = empleadoHttpService;
+        }
+
+        public List<UsuarioListadoDto> Pendientes { get; set; } = new();
+        public List<UsuarioListadoDto> Activos { get; set; } = new();
+        public List<UsuarioListadoDto> Suspendidos { get; set; } = new();
+        public List<EmpleadoListadoDto> EmpleadosSinUsuario { get; set; } = new();
 
         [TempData] public string? Mensaje { get; set; }
         [TempData] public string? MensajeTipo { get; set; }
 
-        public void OnGet()
+        public async Task OnGetAsync()
         {
-            // TODO: GET /api/usuarios
-            var todos = new List<UsuarioDto>
-            {
-                new() { Id=1, Email="admin@constructora.com",      Rol="Administrador", Estado="Activo",    FechaReg=new DateTime(2026,1,15), Empleado=null,                Cedula=null          },
-                new() { Id=2, Email="rodrigo.mendez@gmail.com",    Rol="Capataz",       Estado="Activo",    FechaReg=new DateTime(2026,2,8),  Empleado="Rodrigo Méndez",    Cedula="4.521.887-3" },
-                new() { Id=3, Email="sferreira@hotmail.com",       Rol="Empleado",      Estado="Activo",    FechaReg=new DateTime(2026,2,9),  Empleado="Sebastián Ferreira",Cedula="3.987.654-1" },
-                new() { Id=4, Email="diego.pereira@gmail.com",     Rol="Empleado",      Estado="Activo",    FechaReg=new DateTime(2026,4,20), Empleado="Diego Pereira",     Cedula="4.789.012-5" },
-                new() { Id=5, Email="luciana.torres@outlook.com",  Rol="Capataz",       Estado="Activo",    FechaReg=new DateTime(2026,5,1),  Empleado="Luciana Torres",    Cedula="3.456.789-2" },
-                new() { Id=6, Email="carlos.espinola@gmail.com",   Rol=null,            Estado="Pendiente", FechaReg=new DateTime(2026,6,20), Empleado=null,                Cedula=null          },
-                new() { Id=7, Email="pablo.rios@hotmail.com",      Rol=null,            Estado="Pendiente", FechaReg=new DateTime(2026,6,21), Empleado=null,                Cedula=null          },
-                new() { Id=8, Email="nuevoempleado@gmail.com",     Rol=null,            Estado="Pendiente", FechaReg=new DateTime(2026,6,22), Empleado=null,                Cedula=null          },
-                new() { Id=9, Email="exempleado@gmail.com",        Rol="Empleado",      Estado="Suspendido",FechaReg=new DateTime(2026,3,10), Empleado="Juan Rodríguez",    Cedula="4.999.888-1" },
-            };
+            var todos = await _usuarioHttpService.ObtenerUsuariosAsync() ?? new();
 
             Pendientes = todos.Where(u => u.Estado == "Pendiente").OrderByDescending(u => u.FechaReg).ToList();
             Activos = todos.Where(u => u.Estado == "Activo").OrderBy(u => u.Rol).ThenBy(u => u.Email).ToList();
             Suspendidos = todos.Where(u => u.Estado == "Suspendido").ToList();
 
-            // TODO: GET /api/empleados?sinUsuario=true
-            EmpleadosSinUsuario = new List<EmpleadoDto>
-            {
-                new() { Id=3, Nombre="Marcelo Suárez",  Cedula="5.123.456-7" },
-                new() { Id=6, Nombre="Pablo Ríos",      Cedula="5.654.321-9" },
-                new() { Id=8, Nombre="Fabian Núñez",    Cedula="4.333.111-8" },
-            };
+            // TODO: si el backend expone un endpoint que filtre empleados sin usuario vinculado,
+            // reemplazar esto por: await _empleadoHttpService.ObtenerEmpleadosSinUsuarioAsync()
+            var empleados = await _empleadoHttpService.ObtenerEmpleadosAsync() ?? new();
+            EmpleadosSinUsuario = empleados; // filtrar del lado del backend cuando esté el endpoint
         }
 
-        public IActionResult OnPostAprobarUsuario(
-            int id, string rol, int? idEmpleado)
+        public async Task<IActionResult> OnPostAprobarUsuarioAsync(int id, string rol, int? idEmpleado)
         {
-            if (id == 0 || string.IsNullOrWhiteSpace(rol))
+            if (id == 0 || string.IsNullOrWhiteSpace(rol) || !Roles.Contains(rol))
             {
-                Mensaje = "Seleccioná un rol antes de aprobar."; MensajeTipo = "error";
+                Mensaje = "Seleccioná un rol válido antes de aprobar.";
+                MensajeTipo = "error";
                 return RedirectToPage();
             }
-            if (!Roles.Contains(rol))
-            {
-                Mensaje = "Rol inválido."; MensajeTipo = "error";
-                return RedirectToPage();
-            }
-            // TODO: PATCH /api/usuarios/{id}/aprobar
-            // Body: { rol, idEmpleado? }
-            // La API: cambia Estado = "Activo", asigna Rol, vincula idEmpleado si viene
-            Mensaje = $"Usuario aprobado con rol {rol}."; MensajeTipo = "ok";
+
+            var dto = new AprobarUsuarioDto { Rol = rol, IdEmpleado = idEmpleado };
+            var aprobado = await _usuarioHttpService.AprobarUsuarioAsync(id, dto);
+            Mensaje = aprobado ? $"Usuario aprobado con rol {rol}." : "No se pudo aprobar el usuario.";
+            MensajeTipo = aprobado ? "ok" : "error";
             return RedirectToPage();
         }
 
-        public IActionResult OnPostRechazarUsuario(int id)
+        public async Task<IActionResult> OnPostRechazarUsuarioAsync(int id)
         {
             if (id == 0)
             {
-                Mensaje = "Usuario no encontrado."; MensajeTipo = "error";
+                Mensaje = "Usuario no encontrado.";
+                MensajeTipo = "error";
                 return RedirectToPage();
             }
-            // TODO: DELETE /api/usuarios/{id} o PATCH /api/usuarios/{id}/rechazar
-            Mensaje = "Registro rechazado y eliminado."; MensajeTipo = "ok";
+
+            var rechazado = await _usuarioHttpService.RechazarUsuarioAsync(id);
+            Mensaje = rechazado ? "Registro rechazado correctamente." : "No se pudo rechazar el usuario.";
+            MensajeTipo = rechazado ? "ok" : "error";
             return RedirectToPage();
         }
 
-        public IActionResult OnPostSuspenderUsuario(int id)
+        public async Task<IActionResult> OnPostSuspenderUsuarioAsync(int id)
         {
             if (id == 0)
             {
-                Mensaje = "Usuario no encontrado."; MensajeTipo = "error";
+                Mensaje = "Usuario no encontrado.";
+                MensajeTipo = "error";
                 return RedirectToPage();
             }
-            // TODO: PATCH /api/usuarios/{id}/suspender
-            Mensaje = "Usuario suspendido. No podrá acceder al sistema."; MensajeTipo = "ok";
+
+            var suspendido = await _usuarioHttpService.SuspenderUsuarioAsync(id);
+            Mensaje = suspendido ? "Usuario suspendido correctamente." : "No se pudo suspender el usuario.";
+            MensajeTipo = suspendido ? "ok" : "error";
             return RedirectToPage();
         }
 
-        public IActionResult OnPostReactivarUsuario(int id)
+        public async Task<IActionResult> OnPostReactivarUsuarioAsync(int id)
         {
             if (id == 0)
             {
-                Mensaje = "Usuario no encontrado."; MensajeTipo = "error";
+                Mensaje = "Usuario no encontrado.";
+                MensajeTipo = "error";
                 return RedirectToPage();
             }
-            // TODO: PATCH /api/usuarios/{id}/reactivar
-            Mensaje = "Usuario reactivado correctamente."; MensajeTipo = "ok";
+
+            var reactivado = await _usuarioHttpService.ReactivarUsuarioAsync(id);
+            Mensaje = reactivado ? "Usuario reactivado correctamente." : "No se pudo reactivar el usuario.";
+            MensajeTipo = reactivado ? "ok" : "error";
             return RedirectToPage();
         }
 
-        public IActionResult OnPostCambiarRol(int id, string nuevoRol)
+        public async Task<IActionResult> OnPostCambiarRolAsync(int id, string nuevoRol)
         {
             if (id == 0 || !Roles.Contains(nuevoRol))
             {
-                Mensaje = "Rol inválido."; MensajeTipo = "error";
+                Mensaje = "Rol inválido.";
+                MensajeTipo = "error";
                 return RedirectToPage();
             }
-            // TODO: PATCH /api/usuarios/{id}/rol
-            // Body: { rol: nuevoRol }
-            Mensaje = $"Rol actualizado a {nuevoRol}."; MensajeTipo = "ok";
+
+            var dto = new CambiarRolDto { Rol = nuevoRol };
+            var cambiado = await _usuarioHttpService.CambiarRolAsync(id, dto);
+            Mensaje = cambiado ? $"Rol actualizado a {nuevoRol}." : "No se pudo cambiar el rol.";
+            MensajeTipo = cambiado ? "ok" : "error";
             return RedirectToPage();
         }
     }

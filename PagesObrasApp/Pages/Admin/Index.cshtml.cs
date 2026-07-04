@@ -1,34 +1,41 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PagesObrasApp.Models;
+using PagesObrasApp.Services;
 
 namespace PagesObrasApp.Pages.Admin
 {
     [Authorize(Policy = "SoloAdmin")]
     public class IndexModel : PageModel
     {
-        // Stats del hero
+        private readonly IObraHttpService _obraHttpService;
+        private readonly IHerramientaHttpService _herramientaHttpService;
+
+        public IndexModel(
+            IObraHttpService obraHttpService,
+            IHerramientaHttpService herramientaHttpService)
+        {
+            _obraHttpService = obraHttpService;
+            _herramientaHttpService = herramientaHttpService;
+        }
+
+        public List<ObraListadoDto> ObrasActivas { get; set; } = new();
         public int ObrasEnProgreso { get; set; }
-        public int EmpleadosHoy { get; set; }
         public int HerramientasEnReparacion { get; set; }
 
-        // Tabla de obras activas
-        public List<ObraDto> ObrasActivas { get; set; } = new();
-
-        public void OnGet()
+        public async Task OnGetAsync()
         {
-            // TODO: reemplazar por HttpClient → GET /api/admin/dashboard
-            ObrasEnProgreso = 2;
-            EmpleadosHoy = 14;
-            HerramientasEnReparacion = 3;
+            var obras = await _obraHttpService.ObtenerObrasAsync() ?? new();
 
-            ObrasActivas = new List<ObraDto>
-            {
-                new() { Codigo="OB-2026-014", Nombre="Edificio Las Acacias",     Cliente="Inmobiliaria Sur S.A.", Estado="En Progreso", Avance=62, FechaInicio=new DateTime(2026,2,10) },
-                new() { Codigo="OB-2026-019", Nombre="Casa Familia Pérez",       Cliente="Marcos Pérez",          Estado="Planificada", Avance=0,  FechaInicio=new DateTime(2026,7,1)  },
-                new() { Codigo="OB-2026-011", Nombre="Galpón Industrial Ruta 5", Cliente="Logística del Este",    Estado="En Progreso", Avance=38, FechaInicio=new DateTime(2026,4,22) },
-                new() { Codigo="OB-2025-087", Nombre="Reforma Local Comercial",  Cliente="Comercial Andina",      Estado="Pausada",     Avance=45, FechaInicio=new DateTime(2026,1,15) },
-            };
+            ObrasActivas = obras.Where(o => o.Estado == "En Progreso").ToList();
+            ObrasEnProgreso = ObrasActivas.Count;
+
+            var herramientas = await _herramientaHttpService.ObtenerHerramientasAsync() ?? new();
+            HerramientasEnReparacion = herramientas.Count(h => h.EstadoDisponibilidad == "En Reparación");
+
+            // TODO: no hay servicio de "empleados trabajando hoy" todavía —
+            // cuando el backend exponga un endpoint de registro de horas del día,
+            // reemplazar por: EmpleadosHoy = await _registroHorasHttpService.ContarActivosHoyAsync();
         }
     }
 }

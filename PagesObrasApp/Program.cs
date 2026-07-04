@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using PagesObrasApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,6 +54,8 @@ builder.Services.AddAuthorization(options =>
 // ── HttpClient hacia la API ────────────────────────────────────────────
 builder.Services.AddHttpClient("API", client =>
 {
+    builder.Services.AddScoped<IApiService, ApiService>();
+    builder.Services.AddScoped<IClienteHttpService, ClienteHttpService>();
     var apiUrl = builder.Configuration["ApiBaseUrl"];
     client.BaseAddress = new Uri(apiUrl ?? "https://localhost:7000/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
