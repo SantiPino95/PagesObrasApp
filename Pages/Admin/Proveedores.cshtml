@@ -1,0 +1,133 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.ProveedoresModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Proveedores";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Proveedores</h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevoProveedor">
+            + Nuevo proveedor
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>RUT</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.Proveedores)
+                {
+                    <tr>
+                        <td><strong>@p.Nombre</strong></td>
+                        <td><span class="font-monospace">@p.Rut</span></td>
+                        <td>@p.Telefono</td>
+                        <td>@p.Email</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary" onclick="abrirEditarProv(@p.IdProveedor, '@p.Nombre', '@p.Rut', '@p.Telefono', '@p.Email')">
+                                Editar
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: Nuevo Proveedor -->
+<div class="modal fade" id="modalNuevoProveedor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title">Nuevo Proveedor</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearProveedor">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">RUT</label>
+                            <input type="text" name="rut" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" name="telefono" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Editar Proveedor -->
+<div class="modal fade" id="modalEditarProveedor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title">Editar Proveedor</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="EditarProveedor">
+                <input type="hidden" name="id" id="editProvId">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="nombre" id="editProvNombre" class="form-control" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">RUT</label>
+                            <input type="text" name="rut" id="editProvRut" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" name="telefono" id="editProvTelefono" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" id="editProvEmail" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function abrirEditarProv(id, nombre, rut, telefono, email) {
+        document.getElementById('editProvId').value = id;
+        document.getElementById('editProvNombre').value = nombre;
+        document.getElementById('editProvRut').value = rut;
+        document.getElementById('editProvTelefono').value = telefono || '';
+        document.getElementById('editProvEmail').value = email || '';
+        new bootstrap.Modal(document.getElementById('modalEditarProveedor')).show();
+    }
+</script>

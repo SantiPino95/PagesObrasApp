@@ -1,0 +1,89 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.AsignacionEmpleadosModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Asignación de Empleados";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Asignación de Empleados</h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAsignar">
+            + Nueva asignación
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th>Obra</th>
+                    <th>Categoría</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model.Asignaciones)
+                {
+                    <tr>
+                        <td>@a.NombreCompleto</td>
+                        <td>@a.NombreObra</td>
+                        <td>@a.Categoria</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: Nueva Asignación -->
+<div class="modal fade" id="modalAsignar" tabindex="-1" aria-labelledby="modalAsignarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title" id="modalAsignarLabel">Asignar Empleado a Obra</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearAsignacion">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Empleado</label>
+                        <select name="idEmpleado" class="form-select" required>
+                            <option value="">Seleccionar empleado...</option>
+                            @foreach (var e in Model.Empleados)
+                            {
+                                <option value="@e.IdEmpleado">@e.NombreCompleto</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Obra</label>
+                        <select name="idObra" class="form-select" required>
+                            <option value="">Seleccionar obra...</option>
+                            @foreach (var o in Model.Obras)
+                            {
+                                <option value="@o.IdObra">@o.NombreObra</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rol en obra</label>
+                        <select name="rolEnObra" class="form-select">
+                            <option value="Oficial">Oficial</option>
+                            <option value="Capataz">Capataz</option>
+                            <option value="Ayudante">Ayudante</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Valor hora ($)</label>
+                        <input type="number" name="valorHoraAsignado" class="form-control" step="10" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

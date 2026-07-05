@@ -1,0 +1,109 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.ObrasModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Obras";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h1 class="mb-0">Obras</h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevaObra">
+            <strong>+ Nueva obra</strong>
+        </button>
+    </div>
+
+    <!-- TABLA DE OBRAS -->
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                    <th>Avance</th>
+                    <th class="text-end">Gastado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var obra in Model.Obras)
+                {
+                    var estadoCls = obra.Estado == "En Progreso" ? "primary" :
+                                    obra.Estado == "Planificada" ? "secondary" :
+                                    obra.Estado == "Finalizada" ? "success" :
+                                    obra.Estado == "Pausada" ? "warning" : "secondary";
+                    <tr>
+                        <td><span class="font-monospace">@obra.CodigoFormateado</span></td>
+                        <td><strong>@obra.NombreObra</strong></td>
+                        <td>@obra.NombreCliente</td>
+                        <td><span class="badge bg-@estadoCls">@obra.Estado</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 8px; max-width: 120px;">
+                                    <div class="progress-bar" style="width: @obra.PorcentajeAvanceActual%;"></div>
+                                </div>
+                                <span class="small fw-bold">@obra.PorcentajeAvanceActual%</span>
+                            </div>
+                        </td>
+                        <td class="text-end fw-bold">$@obra.TotalGastado.ToString("N0")</td>
+                    </tr>
+                }
+                @if (!Model.Obras.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No hay obras registradas</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: Nueva Obra -->
+<div class="modal fade" id="modalNuevaObra" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title"><strong>Nueva Obra</strong></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearObra">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre de la obra</label>
+                        <input type="text" name="nombreObra" class="form-control" placeholder="Ej: Edificio Las Acacias" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Cliente</label>
+                        <select name="idCliente" class="form-select" required>
+                            <option value="">Seleccionar cliente...</option>
+                            @foreach (var c in Model.Clientes)
+                            {
+                                <option value="@c.IdCliente">@c.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Dirección</label>
+                        <input type="text" name="direccion" class="form-control" placeholder="Ej: Av. Italia 1234" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Fecha inicio</label>
+                            <input type="date" name="fechaInicio" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Fecha fin prevista</label>
+                            <input type="date" name="fechaFinPrevista" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning"><strong>Guardar</strong></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

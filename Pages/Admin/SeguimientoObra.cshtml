@@ -1,0 +1,102 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.SeguimientoObraModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Seguimiento de Obra";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Seguimiento de Obra</h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalRegistrar">
+            + Registrar avance
+        </button>
+    </div>
+
+    @foreach (var obra in Model.Obras)
+    {
+        var seguimientos = Model.SeguimientosPorObra.TryGetValue(obra.IdObra, out var list) ? list : new List<PagesObrasApp.Models.DTOs.SeguimientoListadoDto>();
+        var ultimoAvance = seguimientos.Any() ? seguimientos.Max(s => s.PorcentajeAvance) : 0;
+
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@obra.NombreObra</strong>
+                    <span class="badge bg-secondary ms-2">@obra.CodigoFormateado</span>
+                </div>
+                <span class="badge bg-primary">@ultimoAvance%</span>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-2">
+                    <div class="progress-bar" style="width:@ultimoAvance%">@ultimoAvance%</div>
+                </div>
+                @if (seguimientos.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var s in seguimientos.OrderByDescending(x => x.Fecha).Take(3))
+                        {
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span><strong>@s.Fecha.ToString("dd/MM/yyyy")</strong> - @s.DescripcionAvance</span>
+                                    <span class="badge bg-primary">@s.PorcentajeAvance%</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">Sin registros de avance</p>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- MODAL: Registrar Avance -->
+<div class="modal fade" id="modalRegistrar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title">Registrar Avance</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearSeguimiento">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Obra</label>
+                        <select name="idObra" class="form-select" required>
+                            <option value="">Seleccionar obra...</option>
+                            @foreach (var o in Model.Obras)
+                            {
+                                <option value="@o.IdObra">@o.NombreObra</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" name="fecha" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Porcentaje de avance</label>
+                            <input type="number" name="porcentajeAvance" class="form-control" min="0" max="100" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea name="descripcionAvance" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">URL de foto (opcional)</label>
+                        <input type="text" name="imgProgreso" class="form-control" placeholder="https://...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
