@@ -1,0 +1,186 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.UsuariosModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Usuarios";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>
+            Usuarios
+            @if (Model.UsuariosPendientes.Count(u => u.Estado == "Pendiente") > 0)
+            {
+                <span class="badge bg-warning ms-2">@Model.UsuariosPendientes.Count(u => u.Estado == "Pendiente") pendientes</span>
+            }
+        </h1>
+    </div>
+
+    <!-- PENDIENTES -->
+    @if (Model.UsuariosPendientes.Any(u => u.Estado == "Pendiente"))
+    {
+        <div class="card mb-4 border-warning">
+            <div class="card-header bg-warning bg-opacity-25">
+                <strong>Pendientes de aprobación</strong>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Nombre</th>
+                                <th>Rol</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var u in Model.UsuariosPendientes.Where(x => x.Estado == "Pendiente"))
+                            {
+                                <tr>
+                                    <td>@u.Email</td>
+                                    <td>@u.NombreEmpleado @u.ApellidoEmpleado</td>
+                                    <td>
+                                        <form method="post" asp-page-handler="AprobarUsuario" style="display:inline">
+                                            <input type="hidden" name="id" value="@u.IdUsuario">
+                                            <select name="rol" class="form-select form-select-sm d-inline-block w-auto" required>
+                                                <option value="">Rol...</option>
+                                                <option value="Administrador">Administrador</option>
+                                                <option value="Supervisor">Supervisor</option>
+                                                <option value="Empleado">Empleado</option>
+                                            </select>
+                                            <select name="idEmpleado" class="form-select form-select-sm d-inline-block w-auto">
+                                                <option value="">Sin empleado</option>
+                                                @foreach (var e in Model.Empleados)
+                                                {
+                                                    <option value="@e.IdEmpleado">@e.NombreCompleto</option>
+                                                }
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-success">✓ Aprobar</button>
+                                        </form>
+                                    </td>
+                                    <td class="text-end">
+                                        <form method="post" asp-page-handler="RechazarUsuario" style="display:inline">
+                                            <input type="hidden" name="id" value="@u.IdUsuario">
+                                            <button type="submit" class="btn btn-sm btn-danger">✗ Rechazar</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ACTIVOS -->
+    <div class="card">
+        <div class="card-header">
+            <strong>Usuarios activos</strong>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Empleado</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in Model.UsuariosPendientes.Where(x => x.Estado == "Activo"))
+                        {
+                            <tr>
+                                <td>@u.Email</td>
+                                <td>@u.NombreEmpleado @u.ApellidoEmpleado</td>
+                                <td>@u.NombreRol</td>
+                                <td><span class="badge bg-success">Activo</span></td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="cambiarRol(@u.IdUsuario, '@u.NombreRol')">Cambiar rol</button>
+                                    <form method="post" asp-page-handler="SuspenderUsuario" style="display:inline">
+                                        <input type="hidden" name="id" value="@u.IdUsuario">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning">Suspender</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUSPENDIDOS -->
+    @if (Model.UsuariosPendientes.Any(u => u.Estado == "Suspendido"))
+    {
+        <div class="card mt-3 border-secondary">
+            <div class="card-header bg-secondary bg-opacity-25">
+                <strong>Suspendidos</strong>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <tbody>
+                            @foreach (var u in Model.UsuariosPendientes.Where(x => x.Estado == "Suspendido"))
+                            {
+                                <tr>
+                                    <td>@u.Email</td>
+                                    <td>@u.NombreEmpleado @u.ApellidoEmpleado</td>
+                                    <td>@u.NombreRol</td>
+                                    <td><span class="badge bg-secondary">Suspendido</span></td>
+                                    <td class="text-end">
+                                        <form method="post" asp-page-handler="ReactivarUsuario" style="display:inline">
+                                            <input type="hidden" name="id" value="@u.IdUsuario">
+                                            <button type="submit" class="btn btn-sm btn-success">Reactivar</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- MODAL: Cambiar Rol -->
+<div class="modal fade" id="modalCambiarRol" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title">Cambiar Rol</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CambiarRol">
+                <input type="hidden" name="id" id="cambiarRolId">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nuevo rol</label>
+                        <select name="rol" id="cambiarRolSelect" class="form-select" required>
+                            <option value="Administrador">Administrador</option>
+                            <option value="Supervisor">Supervisor</option>
+                            <option value="Empleado">Empleado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function cambiarRol(id, rolActual) {
+        document.getElementById('cambiarRolId').value = id;
+        document.getElementById('cambiarRolSelect').value = rolActual || 'Empleado';
+        new bootstrap.Modal(document.getElementById('modalCambiarRol')).show();
+    }
+</script>

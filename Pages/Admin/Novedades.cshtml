@@ -1,0 +1,102 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.NovedadesModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Novedades";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Novedades</h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevaNovedad">
+            + Nueva novedad
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Obra</th>
+                    <th>Empleado</th>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var n in Model.Novedades.OrderByDescending(x => x.Fecha))
+                {
+                    <tr>
+                        <td>@n.Fecha.ToString("dd/MM/yyyy")</td>
+                        <td>@n.NombreObra</td>
+                        <td>@n.NombreEmpleado</td>
+                        <td><span class="badge bg-info">@n.TipoNovedad</span></td>
+                        <td>@n.Descripcion</td>
+                        <td>
+                            <span class="badge @(n.EstadoRevision == "Pendiente" ? "bg-warning" : "bg-success")">
+                                @n.EstadoRevision
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            @if (n.EstadoRevision == "Pendiente")
+                            {
+                                <form method="post" asp-page-handler="MarcarRevisada" style="display:inline">
+                                    <input type="hidden" name="id" value="@n.IdNovedad">
+                                    <button type="submit" class="btn btn-sm btn-success">Marcar revisada</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: Nueva Novedad -->
+<div class="modal fade" id="modalNuevaNovedad" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title">Reportar Novedad</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearNovedad">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <select name="tipoNovedad" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="Falta de Material">Falta de Material</option>
+                            <option value="Rotura Equipo">Rotura de Equipo</option>
+                            <option value="Incidencia Personal">Incidencia Personal</option>
+                            <option value="Clima">Clima</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" name="fecha" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">ID Asignación</label>
+                            <input type="number" name="idEmpleadoObra" class="form-control" placeholder="Ej: 7" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea name="descripcion" class="form-control" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

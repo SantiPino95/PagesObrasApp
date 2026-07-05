@@ -1,0 +1,259 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.HerramientasModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Herramientas";
+}
+
+<div class="admin-dashboard">
+
+    @if (!string.IsNullOrEmpty(Model.Mensaje))
+    {
+        <div class="alert @(Model.MensajeTipo == "ok" ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+            @Model.Mensaje
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Herramientas</h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevaHerramienta">
+            <strong>+ Nueva herramienta</strong>
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Tipo</th>
+                    <th>Origen</th>
+                    <th>Obra actual</th>
+                    <th>Estado</th>
+                    <th>Última salida</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var h in Model.Herramientas.OrderBy(x => x.CodigoInventario))
+                {
+                    var estaAsignada = h.EstadoDisponibilidad == "En Obra";
+                    var estadoCls = h.EstadoDisponibilidad == "Disponible" ? "success" :
+                                    h.EstadoDisponibilidad == "En Obra" ? "primary" :
+                                    h.EstadoDisponibilidad == "En Reparación" ? "danger" : "secondary";
+
+                    <tr>
+                        <td><span class="font-monospace"><strong>@h.CodigoInventario</strong></span></td>
+                        <td>@h.NombreTipo</td>
+                        <td><span class="badge @(h.Origen == "Propia" ? "bg-primary" : "bg-secondary")">@h.Origen</span></td>
+                        <td>
+                            @if (estaAsignada)
+                            {
+                                <span class="badge bg-info">@h.NombreObraActual</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge bg-@estadoCls">
+                                @h.EstadoDisponibilidad
+                                @if (estaAsignada && h.UltimaFechaSalida.HasValue)
+                                {
+                                    <span class="d-block small">desde @h.UltimaFechaSalida.Value.ToString("dd/MM/yyyy")</span>
+                                }
+                            </span>
+                        </td>
+                        <td>
+                            @if (h.UltimaFechaSalida.HasValue)
+                            {
+                                <span class="font-monospace small">@h.UltimaFechaSalida.Value.ToString("dd/MM/yyyy")</span>
+                                if (h.FechaDevolucion.HasValue)
+                                {
+                                    <span class="text-success small"> (devuelta @h.FechaDevolucion.Value.ToString("dd/MM/yyyy"))</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex gap-1 justify-content-end flex-wrap">
+                                @if (!estaAsignada && h.EstadoDisponibilidad != "En Reparación" && h.EstadoDisponibilidad != "En Obra")
+                                {
+                                    <button class="btn btn-sm btn-outline-primary" onclick="abrirAsignar(@h.IdHerramienta, '@h.CodigoInventario')">
+                                        Asignar
+                                    </button>
+                                }
+                                @if (estaAsignada || h.EstadoDisponibilidad == "En Obra")
+                                {
+                                    <button class="btn btn-sm btn-outline-success" onclick="abrirDevolver(@h.IdHerramienta, '@h.CodigoInventario', @h.IdObraActual)">
+                                        Devolver
+                                    </button>
+                                }
+                                @if (!estaAsignada && h.EstadoDisponibilidad != "En Obra")
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" onclick="abrirEliminar(@h.IdHerramienta, '@h.CodigoInventario')">
+                                        Eliminar
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Herramientas.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No hay herramientas registradas</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL: NUEVA HERRAMIENTA -->
+<!-- ============================================================ -->
+<div class="modal fade" id="modalNuevaHerramienta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title"><strong>Nueva Herramienta</strong></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearHerramienta">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tipo</label>
+                        <input type="text" name="nombreTipo" class="form-control" placeholder="Ej: Amoladora angular" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Código de inventario</label>
+                            <input type="text" name="codigoInventario" class="form-control" placeholder="Ej: HER-0045" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Origen</label>
+                            <select name="origen" class="form-select">
+                                <option value="Propia">Propia</option>
+                                <option value="Alquilada">Alquilada</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning"><strong>Guardar</strong></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL: ASIGNAR HERRAMIENTA -->
+<!-- ============================================================ -->
+<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#2D6CDF;color:white">
+                <h5 class="modal-title"><strong>Asignar Herramienta</strong></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="AsignarHerramienta">
+                <input type="hidden" name="idHerramienta" id="asignarId">
+                <div class="modal-body">
+                    <p><strong id="asignarNombre"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Obra de destino</label>
+                        <select name="idObra" class="form-select" required>
+                            <option value="">Seleccionar obra...</option>
+                            @foreach (var o in Model.Obras)
+                            {
+                                <option value="@o.IdObra">@o.NombreObra (@o.CodigoFormateado)</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><strong>Asignar</strong></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL: DEVOLVER HERRAMIENTA -->
+<!-- ============================================================ -->
+<div class="modal fade" id="modalDevolver" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#2E7D52;color:white">
+                <h5 class="modal-title"><strong>Registrar Devolución</strong></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="RegistrarDevolucion">
+                <input type="hidden" name="idHerramienta" id="devolverId">
+                <input type="hidden" name="idObra" id="devolverObraId">
+                <div class="modal-body">
+                    <p>¿Confirmás la devolución de <strong id="devolverNombre"></strong>?</p>
+                    <small class="text-muted">La herramienta quedará disponible en el depósito.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success"><strong>Confirmar devolución</strong></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Eliminar -->
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#B23A2E;color:white">
+                <h5 class="modal-title"><strong>Eliminar Herramienta</strong></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="EliminarHerramienta">
+                <input type="hidden" name="id" id="eliminarId">
+                <div class="modal-body">
+                    <p>¿Eliminar <strong id="eliminarNombre"></strong>?</p>
+                    <small class="text-muted">Solo se pueden eliminar herramientas <strong>no asignadas</strong>.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><strong>Eliminar</strong></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function abrirAsignar(id, codigo) {
+        document.getElementById('asignarId').value = id;
+        document.getElementById('asignarNombre').textContent = 'Asignar: ' + codigo;
+        new bootstrap.Modal(document.getElementById('modalAsignar')).show();
+    }
+
+    function abrirDevolver(id, codigo, idObra) {
+        document.getElementById('devolverId').value = id;
+        document.getElementById('devolverObraId').value = idObra;
+        document.getElementById('devolverNombre').textContent = codigo;
+        new bootstrap.Modal(document.getElementById('modalDevolver')).show();
+    }
+
+    function abrirEliminar(id, codigo) {
+        document.getElementById('eliminarId').value = id;
+        document.getElementById('eliminarNombre').textContent = codigo;
+        new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+    }
+</script>

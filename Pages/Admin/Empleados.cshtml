@@ -1,0 +1,89 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.EmpleadosModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Empleados";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Empleados</h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevoEmpleado">
+            + Nuevo empleado
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Teléfono</th>
+                    <th>Obras</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var e in Model.Empleados)
+                {
+                    <tr>
+                        <td>@e.NombreCompleto</td>
+                        <td>@e.Categoria</td>
+                        <td>@e.Telefono</td>
+                        <td>
+                            @{
+                                var asignaciones = Model.Asignados.Where(a => a.IdEmpleado == e.IdEmpleado).ToList();
+                            }
+                            @if (asignaciones.Any())
+                            {
+                                @string.Join(", ", asignaciones.Select(a => a.NombreObra))
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sin asignar</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: Nuevo Empleado -->
+<div class="modal fade" id="modalNuevoEmpleado" tabindex="-1" aria-labelledby="modalNuevoEmpleadoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title" id="modalNuevoEmpleadoLabel">Nuevo Empleado</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearEmpleado">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" name="nombre" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Apellido</label>
+                            <input type="text" name="apellido" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Categoría</label>
+                        <input type="text" name="categoria" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" name="telefono" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
