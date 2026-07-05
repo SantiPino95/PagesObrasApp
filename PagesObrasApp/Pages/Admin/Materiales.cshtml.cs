@@ -9,27 +9,27 @@ namespace PagesObrasApp.Pages.Admin
     [Authorize(Policy = "SoloAdmin")]
     public class MaterialesModel : PageModel
     {
-        private readonly IMaterialHttpService _materialHttpService;
-        private readonly IProveedorHttpService _proveedorHttpService;
+        private readonly IApiService _api;
+        private readonly IObraHttpService _obraHttpService;
 
-        public MaterialesModel(
-            IMaterialHttpService materialHttpService,
-            IProveedorHttpService proveedorHttpService)
+        public MaterialesModel(IApiService api, IObraHttpService obraHttpService)
         {
-            _materialHttpService = materialHttpService;
-            _proveedorHttpService = proveedorHttpService;
+            _api = api;
+            _obraHttpService = obraHttpService;
         }
 
         public List<MaterialListadoDto> Materiales { get; set; } = new();
-        public List<ProveedorListadoDto> Proveedores { get; set; } = new();
+        public List<ObraListadoDto> Obras { get; set; } = new();
+
+        public bool EntradaStockDisponible => false; // ver "Falta en la API"
 
         [TempData] public string? Mensaje { get; set; }
         [TempData] public string? MensajeTipo { get; set; }
 
         public async Task OnGetAsync()
         {
-            Materiales = await _materialHttpService.ObtenerMaterialesAsync() ?? new();
-            Proveedores = await _proveedorHttpService.ObtenerProveedoresAsync() ?? new();
+            Materiales = await _api.GetAsync<List<MaterialListadoDto>>("api/Materiales") ?? new();
+            Obras = await _obraHttpService.ObtenerObrasAsync() ?? new();
         }
 
         public async Task<IActionResult> OnPostCrearMaterialAsync(
@@ -50,35 +50,29 @@ namespace PagesObrasApp.Pages.Admin
                 StockMinimo = stockMinimo
             };
 
-            var creado = await _materialHttpService.CrearMaterialAsync(dto);
-            Mensaje = creado ? $"Material \"{nombre}\" creado correctamente." : "No se pudo crear el material.";
-            MensajeTipo = creado ? "ok" : "error";
+            var response = await _api.PostAsync("api/Materiales", dto);
+            Mensaje = response.IsSuccessStatusCode ? $"Material \"{nombre}\" creado correctamente." : "No se pudo crear el material.";
+            MensajeTipo = response.IsSuccessStatusCode ? "ok" : "error";
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostEntradaStockAsync(
-            int idMaterial, decimal cantidad, DateTime fecha,
-            int? idProveedor, string? nroComprobante)
+        // Endpoint real — resta stock (consumo en obra), no entrada
+        public async Task<IActionResult> OnPostConsumirMaterialAsync(
+            int idMaterial, int idObra, decimal cantidad)
         {
-            if (idMaterial == 0 || cantidad <= 0)
+            if (idMaterial == 0 || idObra == 0 || cantidad <= 0)
             {
-                Mensaje = "Seleccioná material e ingresá una cantidad válida.";
+                Mensaje = "Seleccioná material, obra y una cantidad válida.";
                 MensajeTipo = "error";
                 return RedirectToPage();
             }
 
-            var dto = new EntradaStockDto
-            {
-                IdMaterial = idMaterial,
-                Cantidad = cantidad,
-                Fecha = fecha,
-                IdProveedor = idProveedor,
-                NroComprobante = nroComprobante
-            };
+            var response = await _api.PostAsync(
+                $"api/Materiales/consumir?idMaterial={idMaterial}&idObra={idObra}&cantidad={cantidad}",
+                new { });
 
-            var registrado = await _materialHttpService.RegistrarEntradaStockAsync(dto);
-            Mensaje = registrado ? "Entrada de stock registrada correctamente." : "No se pudo registrar la entrada.";
-            MensajeTipo = registrado ? "ok" : "error";
+            Mensaje = response.IsSuccessStatusCode ? "Consumo registrado y stock actualizado." : "No se pudo registrar el consumo (verificá stock disponible).";
+            MensajeTipo = response.IsSuccessStatusCode ? "ok" : "error";
             return RedirectToPage();
         }
     }

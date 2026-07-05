@@ -1,10 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PagesObrasApp.Models;
+using PagesObrasApp.Services;
+using System.Net;
 
 namespace PagesObrasApp.Pages.Auth
 {
     public class RegistroModel : PageModel
     {
+        private readonly IAuthHttpService _authHttpService;
+
+        // AJUSTAR: id del rol por defecto para auto-registro en tu tabla Roles.
+        // El admin lo reasigna después vía AprobarUsuarioDto, así que este valor
+        // es solo un placeholder mientras el usuario queda en Estado = "Pendiente".
+        private const int IdRolPorDefecto = 3;
+
+        public RegistroModel(IAuthHttpService authHttpService)
+        {
+            _authHttpService = authHttpService;
+        }
+
         public string? ErrorMessage { get; set; }
         public string EmailIngresado { get; set; } = string.Empty;
 
@@ -13,7 +28,10 @@ namespace PagesObrasApp.Pages.Auth
 
         public void OnGet() { }
 
-        public IActionResult OnPost(string email, string password, string confirmPassword)
+        public async Task<IActionResult> OnPostAsync(
+            string email, string password, string confirmPassword,
+            string nombre, string apellido, string cedula,
+            string? telefono, string categoria)
         {
             EmailIngresado = email?.Trim() ?? string.Empty;
 
@@ -36,26 +54,36 @@ namespace PagesObrasApp.Pages.Auth
                 return Page();
             }
 
-            // ── TODO: HttpClient → POST /api/auth/registro ────────────
-            // Body: { email, contrasena }
-            // Respuestas posibles:
-            //   201 → usuario creado con Estado = "Pendiente"
-            //   409 → ya existe una cuenta con ese email
-            //
-            // Ejemplo de manejo:
-            // var response = await _httpClient.PostAsJsonAsync("api/auth/registro", new { email, contrasena = password });
-            // if (response.StatusCode == HttpStatusCode.Conflict)
-            // {
-            //     ErrorMessage = "Ya existe una cuenta con ese email.";
-            //     return Page();
-            // }
-            // if (!response.IsSuccessStatusCode)
-            // {
-            //     ErrorMessage = "Error al crear la cuenta. Intentá de nuevo.";
-            //     return Page();
-            // }
+            if (string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(apellido) ||
+                string.IsNullOrWhiteSpace(cedula) || string.IsNullOrWhiteSpace(categoria))
+            {
+                ErrorMessage = "Nombre, apellido, cédula y categoría son obligatorios.";
+                return Page();
+            }
 
-            // Registro exitoso → ir al login con mensaje
+            var dto = new RegistroDto
+            {
+                Email = email.Trim(),
+                Password = password,
+                Nombre = nombre,
+                Apellido = apellido,
+                Cedula = cedula,
+                Telefono = telefono,
+                Categoria = categoria,
+                ValorHora = 0, // Lo define el admin más adelante al asignarlo a una obra
+                IdRol = IdRolPorDefecto
+            };
+
+            var (ok, mensajeError, statusCode) = await _authHttpService.RegistrarAsync(dto);
+
+            if (!ok)
+            {
+                ErrorMessage = statusCode == (int)HttpStatusCode.Conflict
+                    ? "Ya existe una cuenta con ese email."
+                    : (mensajeError ?? "Error al crear la cuenta. Intentá de nuevo.");
+                return Page();
+            }
+
             RegistroExitoso = "Cuenta creada correctamente. Esperá la aprobación del administrador para poder ingresar.";
             return RedirectToPage("/Auth/Login");
         }

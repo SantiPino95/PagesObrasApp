@@ -50,13 +50,13 @@ namespace PagesObrasApp.Services
         // El controller recibe idHerramienta e idObra por query string, no hay body ni fecha
         public async Task<bool> AsignarSalidaAsync(int idHerramienta, int idObra)
         {
-            var response = await _api.PostAsync($"{Endpoint}/asignar-salida?idHerramienta={idHerramienta}&idObra={idObra}");
+            var response = await _api.PostAsync($"{Endpoint}/asignar-salida?idHerramienta={idHerramienta}&idObra={idObra}", new { });
             return response.IsSuccessStatusCode;
         }
 
         public async Task<bool> RegistrarDevolucionAsync(int idHerramienta, int idObra)
         {
-            var response = await _api.PostAsync($"{Endpoint}/registrar-devolucion?idHerramienta={idHerramienta}&idObra={idObra}");
+            var response = await _api.PostAsync($"{Endpoint}/registrar-devolucion?idHerramienta={idHerramienta}&idObra={idObra}", new { });
             return response.IsSuccessStatusCode;
         }
     }

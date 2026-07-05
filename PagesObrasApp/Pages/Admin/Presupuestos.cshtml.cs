@@ -9,14 +9,12 @@ namespace PagesObrasApp.Pages.Admin
     [Authorize(Policy = "SoloAdmin")]
     public class PresupuestosModel : PageModel
     {
-        private readonly IPresupuestoHttpService _presupuestoHttpService;
+        private readonly IApiService _api;
         private readonly IObraHttpService _obraHttpService;
 
-        public PresupuestosModel(
-            IPresupuestoHttpService presupuestoHttpService,
-            IObraHttpService obraHttpService)
+        public PresupuestosModel(IApiService api, IObraHttpService obraHttpService)
         {
-            _presupuestoHttpService = presupuestoHttpService;
+            _api = api;
             _obraHttpService = obraHttpService;
         }
 
@@ -28,35 +26,12 @@ namespace PagesObrasApp.Pages.Admin
 
         public async Task OnGetAsync()
         {
-            Presupuestos = await _presupuestoHttpService.ObtenerPresupuestosAsync() ?? new();
+            Presupuestos = await _api.GetAsync<List<PresupuestoListadoDto>>("api/Presupuestos") ?? new();
             Obras = await _obraHttpService.ObtenerObrasAsync() ?? new();
         }
 
-        public async Task<IActionResult> OnPostCambiarEstadoAsync(int id, string accion)
-        {
-            if (id == 0 || (accion != "Aprobar" && accion != "Rechazar"))
-            {
-                Mensaje = "Acción inválida.";
-                MensajeTipo = "error";
-                return RedirectToPage();
-            }
-
-            var nuevoEstado = accion == "Aprobar" ? "Aprobado" : "Rechazado";
-            var dto = new CambiarEstadoPresupuestoDto { Estado = nuevoEstado };
-
-            var cambiado = await _presupuestoHttpService.CambiarEstadoAsync(id, dto);
-            Mensaje = cambiado
-                ? $"Presupuesto PRES-{id:D4} {nuevoEstado.ToLower()} correctamente."
-                : "No se pudo cambiar el estado del presupuesto.";
-            MensajeTipo = cambiado ? (accion == "Aprobar" ? "ok" : "error") : "error";
-            return RedirectToPage();
-        }
-
         public async Task<IActionResult> OnPostCrearPresupuestoAsync(
-            int idObra,
-            List<string> descripciones,
-            List<decimal> cantidades,
-            List<decimal> preciosUnitarios)
+            int idObra, List<string> descripciones, List<decimal> cantidades, List<decimal> preciosUnitarios)
         {
             if (idObra == 0 || descripciones == null || descripciones.Count == 0)
             {
@@ -83,9 +58,30 @@ namespace PagesObrasApp.Pages.Admin
                 Lineas = lineas
             };
 
-            var creado = await _presupuestoHttpService.CrearPresupuestoAsync(dto);
-            Mensaje = creado ? "Presupuesto creado correctamente." : "No se pudo crear el presupuesto.";
-            MensajeTipo = creado ? "ok" : "error";
+            var response = await _api.PostAsync("api/Presupuestos", dto);
+            Mensaje = response.IsSuccessStatusCode ? "Presupuesto creado correctamente." : "No se pudo crear el presupuesto.";
+            MensajeTipo = response.IsSuccessStatusCode ? "ok" : "error";
+            return RedirectToPage();
+        }
+
+        // ── NUEVO: ya existe PUT api/Presupuestos/{id}/estado ──
+        public async Task<IActionResult> OnPostCambiarEstadoAsync(int id, string accion)
+        {
+            if (id == 0 || (accion != "Aprobar" && accion != "Rechazar"))
+            {
+                Mensaje = "Acción inválida.";
+                MensajeTipo = "error";
+                return RedirectToPage();
+            }
+
+            var nuevoEstado = accion == "Aprobar" ? "Aprobado" : "Rechazado";
+            var dto = new CambiarEstadoPresupuestoDto { Estado = nuevoEstado };
+
+            var response = await _api.PutAsync($"api/Presupuestos/{id}/estado", dto);
+            Mensaje = response.IsSuccessStatusCode
+                ? $"Presupuesto PRES-{id:D4} {nuevoEstado.ToLower()} correctamente."
+                : "No se pudo cambiar el estado del presupuesto.";
+            MensajeTipo = response.IsSuccessStatusCode ? (accion == "Aprobar" ? "ok" : "error") : "error";
             return RedirectToPage();
         }
     }

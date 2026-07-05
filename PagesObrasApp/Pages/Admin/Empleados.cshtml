@@ -5,142 +5,33 @@
     Layout = "_AdminLayout";
     ViewData["Title"] = "Empleados";
 
-    // --- Datos de muestra (mock) — reemplazar por Model.* cuando conectemos la API vía DTOs ---
-    var today = new DateTime(2026, 6, 22);
-    var inicioSemana = today.AddDays(-6);   // rolling 7 días
-    var inicioMes = new DateTime(today.Year, today.Month, 1);
+    var asignacionesPorEmpleado = Model.Asignados
+        .GroupBy(a => a.IdEmpleado)
+        .ToDictionary(g => g.Key, g => g.ToList());
 
-    var empleados = new[] {
-        new { Id=1, Nombre="Rodrigo Méndez",     Cedula="4.521.887-3", Tel="099 112 233", ValorHora=320m },
-        new { Id=2, Nombre="Sebastián Ferreira",  Cedula="3.987.654-1", Tel="098 445 566", ValorHora=280m },
-        new { Id=3, Nombre="Marcelo Suárez",      Cedula="5.123.456-7", Tel="091 778 899", ValorHora=240m },
-        new { Id=4, Nombre="Diego Pereira",       Cedula="4.789.012-5", Tel="097 334 455", ValorHora=280m },
-        new { Id=5, Nombre="Luciana Torres",      Cedula="3.456.789-2", Tel="092 667 788", ValorHora=320m },
-        new { Id=6, Nombre="Pablo Ríos",          Cedula="5.654.321-9", Tel="094 223 344", ValorHora=200m },
-        new { Id=7, Nombre="Carlos Espínola",     Cedula="4.111.222-6", Tel="096 889 900", ValorHora=280m },
-    };
-
-    var asignaciones = new[] {
-        new { IdAsig=1, IdEmp=1, Obra="Edificio Las Acacias",     Rol="Capataz"  },
-        new { IdAsig=2, IdEmp=2, Obra="Edificio Las Acacias",     Rol="Oficial"  },
-        new { IdAsig=3, IdEmp=3, Obra="Torre Mirador",            Rol="Ayudante" },
-        new { IdAsig=4, IdEmp=4, Obra="Galpón Industrial Ruta 5", Rol="Oficial"  },
-        new { IdAsig=5, IdEmp=5, Obra="Torre Mirador",            Rol="Capataz"  },
-        new { IdAsig=6, IdEmp=6, Obra="Reforma Local Comercial",  Rol="Ayudante" },
-        new { IdAsig=7, IdEmp=7, Obra="Edificio Las Acacias",     Rol="Oficial"  },
-        new { IdAsig=8, IdEmp=7, Obra="Galpón Industrial Ruta 5", Rol="Oficial"  },
-    };
-
-    // Registro de horas: A=IdAsig  C=Comunes  E=Extras
-    var rr = new[] {
-        // Rodrigo (1)
-        new{A=1,F=today,             C=8m,E=0m}, new{A=1,F=today.AddDays(-1), C=8m,E=2m},
-        new{A=1,F=today.AddDays(-2), C=8m,E=0m}, new{A=1,F=today.AddDays(-3), C=8m,E=0m},
-        new{A=1,F=today.AddDays(-4), C=8m,E=1m}, new{A=1,F=today.AddDays(-5), C=8m,E=0m},
-        new{A=1,F=today.AddDays(-6), C=4m,E=0m}, new{A=1,F=today.AddDays(-8), C=8m,E=0m},
-        new{A=1,F=today.AddDays(-9), C=8m,E=2m}, new{A=1,F=today.AddDays(-10),C=8m,E=0m},
-        new{A=1,F=today.AddDays(-11),C=8m,E=0m}, new{A=1,F=today.AddDays(-12),C=8m,E=0m},
-        new{A=1,F=today.AddDays(-13),C=8m,E=1m}, new{A=1,F=today.AddDays(-15),C=8m,E=0m},
-        new{A=1,F=today.AddDays(-16),C=8m,E=0m}, new{A=1,F=today.AddDays(-17),C=8m,E=0m},
-        new{A=1,F=today.AddDays(-18),C=8m,E=0m}, new{A=1,F=today.AddDays(-19),C=8m,E=0m},
-        new{A=1,F=today.AddDays(-21),C=8m,E=0m},
-        // Sebastián (2)
-        new{A=2,F=today,             C=8m,E=0m}, new{A=2,F=today.AddDays(-1), C=8m,E=0m},
-        new{A=2,F=today.AddDays(-2), C=8m,E=0m}, new{A=2,F=today.AddDays(-3), C=8m,E=0m},
-        new{A=2,F=today.AddDays(-4), C=8m,E=0m}, new{A=2,F=today.AddDays(-5), C=8m,E=0m},
-        new{A=2,F=today.AddDays(-8), C=8m,E=0m}, new{A=2,F=today.AddDays(-9), C=6m,E=0m},
-        new{A=2,F=today.AddDays(-15),C=8m,E=0m}, new{A=2,F=today.AddDays(-16),C=8m,E=0m},
-        new{A=2,F=today.AddDays(-17),C=8m,E=0m}, new{A=2,F=today.AddDays(-18),C=8m,E=0m},
-        new{A=2,F=today.AddDays(-19),C=8m,E=0m}, new{A=2,F=today.AddDays(-21),C=8m,E=0m},
-        // Marcelo (3)
-        new{A=3,F=today,             C=6m,E=0m}, new{A=3,F=today.AddDays(-1), C=8m,E=0m},
-        new{A=3,F=today.AddDays(-2), C=8m,E=0m}, new{A=3,F=today.AddDays(-3), C=8m,E=0m},
-        new{A=3,F=today.AddDays(-4), C=8m,E=0m}, new{A=3,F=today.AddDays(-8), C=8m,E=0m},
-        new{A=3,F=today.AddDays(-9), C=8m,E=0m}, new{A=3,F=today.AddDays(-15),C=8m,E=0m},
-        new{A=3,F=today.AddDays(-16),C=8m,E=0m},
-        // Diego (4) - muchas extras
-        new{A=4,F=today,             C=8m,E=2m}, new{A=4,F=today.AddDays(-1), C=8m,E=2m},
-        new{A=4,F=today.AddDays(-2), C=8m,E=0m}, new{A=4,F=today.AddDays(-3), C=8m,E=0m},
-        new{A=4,F=today.AddDays(-4), C=8m,E=0m}, new{A=4,F=today.AddDays(-5), C=8m,E=0m},
-        new{A=4,F=today.AddDays(-6), C=8m,E=0m}, new{A=4,F=today.AddDays(-8), C=8m,E=2m},
-        new{A=4,F=today.AddDays(-9), C=8m,E=0m}, new{A=4,F=today.AddDays(-10),C=8m,E=2m},
-        new{A=4,F=today.AddDays(-15),C=8m,E=0m}, new{A=4,F=today.AddDays(-16),C=8m,E=0m},
-        new{A=4,F=today.AddDays(-17),C=8m,E=0m},
-        // Luciana (5)
-        new{A=5,F=today,             C=8m,E=0m}, new{A=5,F=today.AddDays(-1), C=8m,E=1m},
-        new{A=5,F=today.AddDays(-2), C=8m,E=0m}, new{A=5,F=today.AddDays(-3), C=8m,E=0m},
-        new{A=5,F=today.AddDays(-4), C=8m,E=0m}, new{A=5,F=today.AddDays(-5), C=8m,E=0m},
-        new{A=5,F=today.AddDays(-6), C=8m,E=0m}, new{A=5,F=today.AddDays(-8), C=8m,E=1m},
-        new{A=5,F=today.AddDays(-9), C=8m,E=0m}, new{A=5,F=today.AddDays(-15),C=8m,E=0m},
-        new{A=5,F=today.AddDays(-16),C=8m,E=0m},
-        // Pablo (6) — ausente hoy
-        new{A=6,F=today.AddDays(-1), C=4m,E=0m}, new{A=6,F=today.AddDays(-2), C=8m,E=0m},
-        new{A=6,F=today.AddDays(-3), C=8m,E=0m}, new{A=6,F=today.AddDays(-8), C=8m,E=0m},
-        new{A=6,F=today.AddDays(-9), C=8m,E=0m}, new{A=6,F=today.AddDays(-15),C=8m,E=0m},
-        // Carlos (7=Edificio, 8=Galpón)
-        new{A=7,F=today,             C=8m,E=1m}, new{A=7,F=today.AddDays(-1), C=8m,E=0m},
-        new{A=7,F=today.AddDays(-2), C=8m,E=0m}, new{A=7,F=today.AddDays(-3), C=8m,E=0m},
-        new{A=7,F=today.AddDays(-4), C=8m,E=0m},
-        new{A=8,F=today.AddDays(-5), C=8m,E=2m}, new{A=8,F=today.AddDays(-6), C=8m,E=0m},
-        new{A=8,F=today.AddDays(-9), C=8m,E=0m}, new{A=8,F=today.AddDays(-15),C=8m,E=0m},
-        new{A=8,F=today.AddDays(-16),C=8m,E=0m},
-    };
-
-    var vista = empleados.Select(e =>
+    var vista = Model.Empleados.Select(e => new
     {
-        var misAsig = asignaciones.Where(a => a.IdEmp == e.Id).ToList();
-        var ids = new HashSet<int>(misAsig.Select(a => a.IdAsig));
-        var regs = rr.Where(r => ids.Contains(r.A)).ToList();
+        e.IdEmpleado,
+        e.NombreCompleto,
+        e.Categoria,
+        Telefono = e.Telefono ?? "",
+        NombreLow = e.NombreCompleto.ToLower(),
+        Obras = asignacionesPorEmpleado.TryGetValue(e.IdEmpleado, out var lista) ? lista : new List<PagesObrasApp.Models.EmpleadoObraDto>(),
+    }).OrderBy(e => e.NombreCompleto).ToList();
 
-        var rHoy = regs.Where(r => r.F.Date == today.Date).ToList();
-        var rSem = regs.Where(r => r.F.Date >= inicioSemana.Date && r.F.Date <= today.Date).ToList();
-        var rMes = regs.Where(r => r.F.Date >= inicioMes.Date && r.F.Date <= today.Date).ToList();
-
-        var hoyC = rHoy.Sum(r => r.C); var hoyE = rHoy.Sum(r => r.E);
-        var semC = rSem.Sum(r => r.C); var semE = rSem.Sum(r => r.E);
-        var mesC = rMes.Sum(r => r.C); var mesE = rMes.Sum(r => r.E);
-        var costo = (mesC + mesE) * e.ValorHora;
-
-        return new
-        {
-            e.Id,
-            e.Nombre,
-            e.Cedula,
-            e.Tel,
-            e.ValorHora,
-            Obras = misAsig,
-            ObrasStr = string.Join("|", misAsig.Select(a => a.Obra.ToLower())),
-            RolesStr = string.Join("|", misAsig.Select(a => a.Rol.ToLower())),
-            NombreLow = e.Nombre.ToLower(),
-            TrabajandoHoy = hoyC + hoyE > 0,
-            // Strings pre-formateados para data attrs
-            HoyT = hoyC + hoyE,
-            HoyEStr = $"{hoyE:0.#}",
-            SemT = semC + semE,
-            SemEStr = $"{semE:0.#}",
-            MesT = mesC + mesE,
-            MesEStr = $"{mesE:0.#}",
-            HoyTStr = $"{hoyC + hoyE:0.#}",
-            SemTStr = $"{semC + semE:0.#}",
-            MesTStr = $"{mesC + mesE:0.#}",
-            CostoStr = $"${costo:N0}",
-            CostoMes = costo,
-        };
-    }).OrderByDescending(e => e.HoyT).ThenBy(e => e.Nombre).ToList();
-
-    var totalEmpleados = empleados.Length;
-    var trabajandoHoy = vista.Count(e => e.TrabajandoHoy);
-    var totalCostoMes = vista.Sum(e => e.CostoMes);
-    var totalHoyH = vista.Sum(e => e.HoyT);
-    var totalSemH = vista.Sum(e => e.SemT);
-    var totalMesH = vista.Sum(e => e.MesT);
-
-    var obrasMock = asignaciones.Select(a => a.Obra).Distinct().OrderBy(o => o).ToArray();
+    var totalEmpleados = Model.Empleados.Count;
+    var totalAsignados = vista.Count(e => e.Obras.Any());
+    var categorias = Model.Empleados.Select(e => e.Categoria).Distinct().OrderBy(c => c).ToList();
 }
 
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <div class="admin-dashboard">
+
+    @if (!string.IsNullOrEmpty(Model.Mensaje))
+    {
+        <div class="alert @(Model.MensajeTipo == "ok" ? "alert-success" : "alert-danger")">@Model.Mensaje</div>
+    }
 
     <!-- HEADER -->
     <section class="bp-section">
@@ -162,226 +53,118 @@
 
     <!-- STAT CARDS -->
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4">
             <div class="bp-stat-card">
                 <span class="bp-stat-label">Total empleados</span>
                 <span class="bp-stat-num">@totalEmpleados</span>
                 <span class="bp-stat-sub">en nómina</span>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4">
             <div class="bp-stat-card">
-                <span class="bp-stat-label">Trabajando hoy</span>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="bp-stat-num">@trabajandoHoy</span>
-                    <span class="bp-pulse-dot"></span>
-                </div>
-                <span class="bp-stat-sub">de @totalEmpleados asignados</span>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="bp-stat-card">
-                <span class="bp-stat-label">
-                    Horas equipo
-                    <span id="statPeriodoLabel" class="bp-stat-periodo">(hoy)</span>
-                </span>
-                <span class="bp-stat-num"
-                      id="statHorasEquipo"
-                      data-hoy="@totalHoyH.ToString("0.#")"
-                      data-sem="@totalSemH.ToString("0.#")"
-                      data-mes="@totalMesH.ToString("0.#")">@totalHoyH.ToString("0.#")</span>
-                <span class="bp-stat-sub">horas acumuladas</span>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="bp-stat-card bp-stat-card--accent">
-                <span class="bp-stat-label">Costo estimado mes</span>
-                <span class="bp-stat-num bp-stat-num--amber">$@totalCostoMes.ToString("N0")</span>
-                <span class="bp-stat-sub">en mano de obra</span>
+                <span class="bp-stat-label">Asignados a alguna obra</span>
+                <span class="bp-stat-num">@totalAsignados</span>
+                <span class="bp-stat-sub">de @totalEmpleados</span>
             </div>
         </div>
     </div>
 
-    <!-- TOGGLE DE PERÍODO + FILTROS -->
-    <section class="bp-section">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+    <p class="bp-nota mb-3">
+        El registro de horas trabajadas y el costeo mensual todavía no están disponibles — dependen de un módulo que la API no expone aún.
+    </p>
 
-            <!-- Pill toggle período -->
-            <div class="bp-periodo-toggle" role="group" aria-label="Período de horas">
-                <button class="bp-periodo-btn active" data-periodo="hoy">Día</button>
-                <button class="bp-periodo-btn" data-periodo="sem">Semana (7d)</button>
-                <button class="bp-periodo-btn" data-periodo="mes">Mes</button>
-            </div>
+    <!-- FILTROS -->
+    <div class="bp-filterbar mb-3">
+        <input type="text" id="bpSearch" class="bp-input" placeholder="Buscar empleado...">
+        <select id="bpFiltroCategoria" class="bp-select">
+            <option value="">Todas las categorías</option>
+            @foreach (var c in categorias)
+            {
+                <option value="@c.ToLower()">@c</option>
+            }
+        </select>
+    </div>
 
-            <!-- Filtros -->
-            <div class="d-flex gap-2 flex-wrap">
-                <input type="text" id="bpSearch" class="bp-input" placeholder="Buscar empleado...">
-                <select id="bpFiltroObra" class="bp-select">
-                    <option value="">Todas las obras</option>
-                    @foreach (var o in obrasMock)
-                    {
-                        <option value="@o.ToLower()">@o</option>
-                    }
-                </select>
-                <select id="bpFiltroRol" class="bp-select">
-                    <option value="">Todos los roles</option>
-                    <option value="capataz">Capataz</option>
-                    <option value="oficial">Oficial</option>
-                    <option value="ayudante">Ayudante</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- TABLA -->
-        <div class="bp-table-wrap">
-            <table class="bp-table" id="bpTabla">
-                <thead>
-                    <tr>
-                        <th>Empleado</th>
-                        <th>Obras y rol</th>
-                        <th>Hoy</th>
-                        <th id="thHoras">Horas <span class="bp-th-periodo">hoy</span></th>
-                        <th id="thExtras">Extras</th>
-                        <th id="thCosto" class="col-mes d-none">Costo est. mes</th>
-                        <th class="text-end">$/h</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="bpTbody">
-                    @foreach (var e in vista)
-                    {
-                        <tr data-nombre="@e.NombreLow"
-                            data-obras="@e.ObrasStr"
-                            data-roles="@e.RolesStr">
-                            <!-- Empleado -->
-                            <td>
-                                <div class="bp-emp-nombre">@e.Nombre</div>
-                                <div class="bp-mono bp-steel">@e.Cedula</div>
-                                <div class="bp-mono bp-tel">@e.Tel</div>
-                            </td>
-                            <!-- Obras y rol -->
-                            <td>
-                                <div class="bp-chip-stack">
+    <!-- TABLA -->
+    <div class="bp-table-wrap">
+        <table class="bp-table">
+            <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th>Categoría</th>
+                    <th>Teléfono</th>
+                    <th>Obras asignadas</th>
+                </tr>
+            </thead>
+            <tbody id="bpTbody">
+                @foreach (var e in vista)
+                {
+                    <tr data-nombre="@e.NombreLow" data-categoria="@e.Categoria.ToLower()">
+                        <td class="bp-strong">@e.NombreCompleto</td>
+                        <td><span class="bp-tag">@e.Categoria</span></td>
+                        <td class="bp-mono">@e.Telefono</td>
+                        <td>
+                            @if (e.Obras.Any())
+                            {
+                                <div class="bp-chip-row">
                                     @foreach (var a in e.Obras)
                                     {
-                                        <div class="bp-obra-row">
-                                            <span class="bp-chip">@a.Obra</span>
-                                            <span class="bp-rol bp-rol--@a.Rol.ToLower()">@a.Rol</span>
-                                        </div>
+                                        <span class="bp-chip">@a.NombreObra</span>
                                     }
                                 </div>
-                            </td>
-                            <!-- Indicador hoy -->
-                            <td>
-                                @if (e.TrabajandoHoy)
-                                {
-                                    <span class="bp-dot bp-dot--on" title="Trabajando hoy"></span>
-                                }
-                                else
-                                {
-                                    <span class="bp-dot bp-dot--off" title="Sin registro hoy"></span>
-                                }
-                            </td>
-                            <!-- Horas totales (data-driven) -->
-                            <td class="bp-td-horas"
-                                data-hoy="@e.HoyTStr"
-                                data-sem="@e.SemTStr"
-                                data-mes="@e.MesTStr">
-                                <span class="bp-horas-num">@e.HoyTStr<small>h</small></span>
-                            </td>
-                            <!-- Extras (data-driven) -->
-                            <td class="bp-td-extras"
-                                data-hoy="@e.HoyEStr"
-                                data-sem="@e.SemEStr"
-                                data-mes="@e.MesEStr">
-                                @if (e.HoyT > 0 && decimal.Parse(e.HoyEStr) > 0)
-                                {
-                                    <span class="bp-extras-num">+@e.HoyEStr<small>h</small></span>
-                                }
-                                else
-                                {
-                                    <span class="bp-steel bp-mono">—</span>
-                                }
-                            </td>
-                            <!-- Costo mes (solo visible en período Mes) -->
-                            <td class="col-mes d-none bp-mono">
-                                @e.CostoStr
-                            </td>
-                            <!-- Valor hora -->
-                            <td class="bp-mono bp-steel text-end">$@e.ValorHora.ToString("N0")</td>
-                            <!-- Acción -->
-                            <td class="text-end">
-                                <a href="#" class="bp-link">Ver →</a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-            <p id="bpEmpty" class="bp-empty d-none">No hay empleados que coincidan con los filtros.</p>
-        </div>
-        <p class="bp-count">Mostrando <span id="bpCount">@vista.Count</span> de @vista.Count empleados</p>
-    </section>
+                            }
+                            else
+                            {
+                                <span class="bp-steel">Sin asignar</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p id="bpEmpty" class="bp-empty d-none">No hay empleados que coincidan con los filtros.</p>
+    </div>
+    <p class="bp-count mt-2">Mostrando <span id="bpCount">@vista.Count</span> de @vista.Count empleados</p>
 
 </div>
 
 <!-- Modal: Alta de empleado -->
 <div class="modal fade" id="modalNuevoEmpleado" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog">
         <div class="modal-content bp-modal">
-            <div class="modal-header bp-modal-header">
-                <div>
-                    <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Alta de personal</span>
-                    <h5 class="modal-title bp-title">Nuevo empleado</h5>
+            <form method="post" asp-page-handler="CrearEmpleado">
+                <div class="modal-header bp-modal-header">
+                    <div>
+                        <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Alta de personal</span>
+                        <h5 class="modal-title bp-title">Nuevo empleado</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body bp-modal-body">
-                <!-- TODO: conectar a OnPostCrearEmpleado cuando esté el HttpClient hacia la API -->
-                <div class="row g-3">
-                    <div class="col-md-8">
-                        <label class="bp-label">Nombre completo</label>
-                        <input type="text" class="bp-input w-100" placeholder="Ej: Juan García">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="bp-label">Cédula de identidad</label>
-                        <input type="text" class="bp-input w-100" placeholder="Ej: 4.123.456-7">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="bp-label">Teléfono</label>
-                        <input type="text" class="bp-input w-100" placeholder="Ej: 099 000 111">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="bp-label">Valor hora ($)</label>
-                        <input type="number" min="1" step="10" class="bp-input w-100" placeholder="Ej: 280">
-                    </div>
-                    <div class="col-12">
-                        <hr class="bp-divider">
-                        <p class="bp-label mb-2">Asignación a obra (opcional)</p>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="bp-label">Obra</label>
-                        <select class="bp-select w-100">
-                            <option value="">Sin asignar por ahora</option>
-                            @foreach (var o in obrasMock)
-                            {
-                                <option value="@o">@o</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="bp-label">Rol en obra</label>
-                        <select class="bp-select w-100">
-                            <option selected>Oficial</option>
-                            <option>Capataz</option>
-                            <option>Ayudante</option>
-                        </select>
+                <div class="modal-body bp-modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="bp-label">Nombre</label>
+                            <input type="text" name="nombre" class="bp-input w-100" placeholder="Ej: Juan" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="bp-label">Apellido</label>
+                            <input type="text" name="apellido" class="bp-input w-100" placeholder="Ej: García" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="bp-label">Categoría</label>
+                            <input type="text" name="categoria" class="bp-input w-100" placeholder="Ej: Oficial" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="bp-label">Teléfono</label>
+                            <input type="text" name="telefono" class="bp-input w-100" placeholder="Ej: 099 000 111">
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer bp-modal-footer">
-                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="bp-btn-primary">Guardar empleado</button>
-            </div>
+                <div class="modal-footer bp-modal-footer">
+                    <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="bp-btn-primary">Guardar empleado</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -390,58 +173,55 @@
 <div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bp-modal">
-            <div class="modal-header bp-modal-header">
-                <div>
-                    <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Movimiento de personal</span>
-                    <h5 class="modal-title bp-title">Asignar empleado a obra</h5>
+            <form method="post" asp-page-handler="AsignarEmpleado">
+                <div class="modal-header bp-modal-header">
+                    <div>
+                        <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Movimiento de personal</span>
+                        <h5 class="modal-title bp-title">Asignar empleado a obra</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body bp-modal-body">
-                <!-- TODO: conectar a OnPostAsignarEmpleado cuando esté el HttpClient hacia la API -->
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="bp-label">Empleado</label>
-                        <select class="bp-select w-100">
-                            <option value="">Seleccionar empleado...</option>
-                            @foreach (var e in vista)
-                            {
-                                <option value="@e.Id">@e.Nombre (@e.Cedula)</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="bp-label">Obra de destino</label>
-                        <select class="bp-select w-100">
-                            <option value="">Seleccionar obra...</option>
-                            @foreach (var o in obrasMock)
-                            {
-                                <option value="@o">@o</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="bp-label">Rol en obra</label>
-                        <select class="bp-select w-100">
-                            <option selected>Oficial</option>
-                            <option>Capataz</option>
-                            <option>Ayudante</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="bp-label">Valor hora asignado ($)</label>
-                        <input type="number" min="1" step="10" class="bp-input w-100" placeholder="Ej: 280">
-                    </div>
-                    <div class="col-12">
-                        <label class="bp-label">Fecha de asignación</label>
-                        <input type="date" class="bp-input w-100" value="@today.ToString("yyyy-MM-dd")">
+                <div class="modal-body bp-modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="bp-label">Empleado</label>
+                            <select name="idEmpleado" class="bp-select w-100" required>
+                                <option value="">Seleccionar empleado...</option>
+                                @foreach (var e in Model.Empleados)
+                                {
+                                    <option value="@e.IdEmpleado">@e.NombreCompleto</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="bp-label">Obra de destino</label>
+                            <select name="idObra" class="bp-select w-100" required>
+                                <option value="">Seleccionar obra...</option>
+                                @foreach (var o in Model.Obras)
+                                {
+                                    <option value="@o.IdObra">@o.NombreObra</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="bp-label">Rol en obra</label>
+                            <select name="rolEnObra" class="bp-select w-100">
+                                <option selected>Oficial</option>
+                                <option>Capataz</option>
+                                <option>Ayudante</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="bp-label">Valor hora asignado ($)</label>
+                            <input type="number" name="valorHoraAsignado" min="1" step="10" class="bp-input w-100" placeholder="Ej: 280" required>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer bp-modal-footer">
-                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="bp-btn-primary">Confirmar asignación</button>
-            </div>
+                <div class="modal-footer bp-modal-footer">
+                    <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="bp-btn-primary">Confirmar asignación</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -455,10 +235,6 @@
         --bp-safety: #F2A900;
         --bp-ink: #181B1F;
         --bp-line: #D8D3C8;
-        --bp-ok: #2E7D52;
-        --bp-capataz: #1B3A5C;
-        --bp-oficial: #5B6670;
-        --bp-ayudante: #D8D3C8;
         font-family: 'Inter', sans-serif;
         color: var(--bp-ink);
     }
@@ -474,7 +250,6 @@
     .bp-title {
         font-family: 'Barlow Condensed', sans-serif;
         font-weight: 600;
-        letter-spacing: 0.01em;
         margin: 0.15rem 0;
     }
 
@@ -483,22 +258,9 @@
         color: var(--bp-ink);
     }
 
-    .bp-section {
-        margin-bottom: 1.75rem;
-    }
+    .bp-section { margin-bottom: 1.5rem; }
 
-    .bp-steel {
-        color: var(--bp-steel);
-    }
-
-    .bp-mono {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.82rem;
-    }
-
-    /* Botones */
     .bp-btn-primary {
-        font-family: 'Inter', sans-serif;
         font-weight: 600;
         font-size: 0.88rem;
         background: var(--bp-safety);
@@ -506,15 +268,9 @@
         border: none;
         border-radius: 6px;
         padding: 0.55rem 1.1rem;
-        transition: background .2s;
     }
 
-        .bp-btn-primary:hover {
-            background: #d99500;
-        }
-
     .bp-btn-ghost {
-        font-family: 'Inter', sans-serif;
         font-weight: 500;
         font-size: 0.88rem;
         background: transparent;
@@ -524,109 +280,31 @@
         padding: 0.55rem 1.1rem;
     }
 
-        .bp-btn-ghost:hover {
-            border-color: var(--bp-steel);
-            color: var(--bp-ink);
-        }
-
-    /* Stat cards */
     .bp-stat-card {
         background: #fff;
         border: 1px solid var(--bp-line);
         border-radius: 8px;
-        padding: 1rem 1.1rem;
-        height: 100%;
+        padding: 1rem;
         display: flex;
         flex-direction: column;
-        gap: 0.15rem;
     }
 
-    .bp-stat-card--accent {
-        border-left: 3px solid var(--bp-safety);
-    }
+    .bp-stat-label { font-size: 0.75rem; color: var(--bp-steel); }
+    .bp-stat-num { font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 700; }
+    .bp-stat-sub { font-size: 0.72rem; color: var(--bp-steel); }
 
-    .bp-stat-label {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.68rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+    .bp-nota {
+        font-size: 0.82rem;
         color: var(--bp-steel);
-    }
-
-    .bp-stat-periodo {
-        color: var(--bp-blueprint);
-        margin-left: 0.3rem;
-    }
-
-    .bp-stat-num {
-        font-family: 'Barlow Condensed', sans-serif;
-        font-size: 2rem;
-        font-weight: 600;
-        color: var(--bp-ink);
-        line-height: 1.1;
-    }
-
-    .bp-stat-num--amber {
-        color: var(--bp-safety);
-    }
-
-    .bp-stat-sub {
-        font-size: 0.75rem;
-        color: var(--bp-steel);
-    }
-
-    /* Pulso "trabajando" */
-    .bp-pulse-dot {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--bp-ok);
-        animation: bpPulse 1.8s ease-in-out infinite;
-    }
-
-    @@keyframes bpPulse {
-        0%, 100% {
-            box-shadow: 0 0 0 0 rgba(46,125,82,.5);
-        }
-
-        50% {
-            box-shadow: 0 0 0 6px rgba(46,125,82,0);
-        }
-    }
-
-    /* Toggle de período */
-    .bp-periodo-toggle {
-        display: flex;
         background: var(--bp-concrete);
-        border: 1px solid var(--bp-line);
-        border-radius: 8px;
-        padding: 3px;
-        gap: 3px;
-    }
-
-    .bp-periodo-btn {
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-        font-size: 0.85rem;
-        background: transparent;
-        border: none;
+        border: 1px dashed var(--bp-line);
         border-radius: 6px;
-        padding: 0.35rem 0.9rem;
-        color: var(--bp-steel);
-        cursor: pointer;
-        transition: background .15s, color .15s;
+        padding: 0.6rem 0.9rem;
     }
 
-        .bp-periodo-btn.active {
-            background: #fff;
-            color: var(--bp-blueprint);
-            box-shadow: 0 1px 4px rgba(0,0,0,.1);
-        }
+    .bp-filterbar { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 
-    /* Filtros */
     .bp-input, .bp-select {
-        font-family: 'Inter', sans-serif;
         font-size: 0.88rem;
         border: 1px solid var(--bp-line);
         border-radius: 6px;
@@ -635,17 +313,8 @@
         color: var(--bp-ink);
     }
 
-        .bp-input:focus, .bp-select:focus {
-            outline: none;
-            border-color: var(--bp-blueprint-light);
-            box-shadow: 0 0 0 3px rgba(45,92,140,0.12);
-        }
+    #bpSearch { flex: 1; min-width: 220px; }
 
-    #bpSearch {
-        min-width: 190px;
-    }
-
-    /* Tabla */
     .bp-table-wrap {
         background: #fff;
         border: 1px solid var(--bp-line);
@@ -653,11 +322,7 @@
         overflow: hidden;
     }
 
-    .bp-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.88rem;
-    }
+    .bp-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 
         .bp-table thead th {
             font-family: 'JetBrains Mono', monospace;
@@ -672,176 +337,45 @@
         }
 
         .bp-table tbody td {
-            padding: 0.75rem 1rem;
+            padding: 0.7rem 1rem;
             border-bottom: 1px solid var(--bp-line);
-            vertical-align: top;
+            vertical-align: middle;
         }
 
-        .bp-table tbody tr:last-child td {
-            border-bottom: none;
-        }
+        .bp-table tbody tr:last-child td { border-bottom: none; }
 
-        .bp-table tbody tr:hover {
-            background: #fafaf8;
-        }
+    .bp-strong { font-weight: 600; }
+    .bp-mono { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--bp-steel); }
+    .bp-steel { color: var(--bp-steel); }
 
-    .bp-empty {
-        text-align: center;
-        padding: 2rem;
-        color: var(--bp-steel);
-        margin: 0;
-    }
-
-    .bp-count {
-        font-size: 0.8rem;
-        color: var(--bp-steel);
-        margin-top: 0.6rem;
-    }
-
-    .bp-emp-nombre {
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-
-    .bp-tel {
-        color: var(--bp-steel);
-        font-size: 0.78rem;
-        margin-top: 0.15rem;
-    }
-
-    .bp-link {
-        font-size: 0.85rem;
-        color: var(--bp-blueprint);
-        text-decoration: none;
+    .bp-tag {
+        font-size: 0.74rem;
         font-weight: 500;
-        white-space: nowrap;
+        padding: 0.18rem 0.55rem;
+        border-radius: 4px;
+        border: 1px solid var(--bp-line);
+        color: var(--bp-steel);
+        display: inline-block;
     }
 
-        .bp-link:hover {
-            color: var(--bp-safety);
-        }
-
-    /* Chips de obra */
-    .bp-chip-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-    }
-
-    .bp-obra-row {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-        flex-wrap: wrap;
-    }
+    .bp-chip-row { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 
     .bp-chip {
-        font-size: 0.73rem;
+        font-size: 0.74rem;
         background: var(--bp-concrete);
         color: var(--bp-ink);
         border-radius: 100px;
-        padding: 0.18rem 0.6rem;
-        white-space: nowrap;
+        padding: 0.2rem 0.6rem;
     }
 
-    .bp-rol {
-        font-size: 0.68rem;
-        font-weight: 600;
-        padding: 0.15rem 0.5rem;
-        border-radius: 4px;
-        white-space: nowrap;
-    }
+    .bp-empty { text-align: center; padding: 2rem; color: var(--bp-steel); margin: 0; }
+    .bp-count { font-size: 0.8rem; color: var(--bp-steel); }
 
-    .bp-rol--capataz {
-        background: #E8EFF6;
-        color: var(--bp-capataz);
-    }
-
-    .bp-rol--oficial {
-        background: #EAECEE;
-        color: var(--bp-steel);
-    }
-
-    .bp-rol--ayudante {
-        background: var(--bp-concrete);
-        color: #888;
-        border: 1px solid var(--bp-line);
-    }
-
-    /* Dot indicador */
-    .bp-dot {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-    }
-
-    .bp-dot--on {
-        background: var(--bp-ok);
-        animation: bpPulse 1.8s ease-in-out infinite;
-    }
-
-    .bp-dot--off {
-        background: var(--bp-line);
-    }
-
-    /* Columnas de horas */
-    .bp-horas-num {
-        font-family: 'Barlow Condensed', sans-serif;
-        font-weight: 600;
-        font-size: 1.3rem;
-        color: var(--bp-blueprint);
-    }
-
-        .bp-horas-num small {
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: var(--bp-steel);
-            margin-left: 1px;
-        }
-
-    .bp-extras-num {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.82rem;
-        color: var(--bp-safety);
-        font-weight: 500;
-    }
-
-        .bp-extras-num small {
-            font-size: 0.7rem;
-        }
-
-    .bp-divider {
-        border-color: var(--bp-line);
-    }
-
-    /* Modal */
-    .bp-modal {
-        border: none;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .bp-modal-header {
-        background: var(--bp-blueprint);
-        border: none;
-        padding: 1.25rem 1.5rem;
-    }
-
-        .bp-modal-header .bp-title {
-            color: #fff;
-            font-size: 1.4rem;
-        }
-
-    .bp-modal-body {
-        padding: 1.5rem;
-        background: var(--bp-concrete);
-    }
-
-    .bp-modal-footer {
-        border-top: 1px solid var(--bp-line);
-        padding: 1rem 1.5rem;
-    }
+    .bp-modal { border: none; border-radius: 10px; overflow: hidden; }
+    .bp-modal-header { background: var(--bp-blueprint); border: none; padding: 1.25rem 1.5rem; }
+    .bp-modal-header .bp-title { color: #fff; font-size: 1.4rem; }
+    .bp-modal-body { padding: 1.5rem; background: var(--bp-concrete); }
+    .bp-modal-footer { border-top: 1px solid var(--bp-line); padding: 1rem 1.5rem; }
 
     .bp-label {
         display: block;
@@ -853,97 +387,36 @@
         margin-bottom: 0.3rem;
     }
 
-    @@media (max-width: 768px) {
-        .bp-table thead th:nth-child(6),
-        .bp-table tbody td:nth-child(6) {
-            display: none;
-        }
+    @@media (max-width: 576px) {
+        .bp-filterbar { flex-direction: column; }
     }
 </style>
 
 <script>
     (function () {
-        // --- TOGGLE DE PERÍODO ---
-        const periodoLabels = { hoy: 'hoy', sem: 'semana (7d)', mes: 'mes' };
-        const btnsPeriodo   = document.querySelectorAll('.bp-periodo-btn');
-        const statHoras     = document.getElementById('statHorasEquipo');
-        const statPeriodo   = document.getElementById('statPeriodoLabel');
-        const thHoras       = document.getElementById('thHoras');
-        const colsMes       = document.querySelectorAll('.col-mes');
-
-        let periodoActual = 'hoy';
-
-        function aplicarPeriodo(periodo) {
-            periodoActual = periodo;
-
-            // Stat card de horas equipo
-            statHoras.textContent = statHoras.dataset[periodo];
-            statPeriodo.textContent = `(${periodoLabels[periodo]})`;
-
-            // Header de la tabla
-            const label = periodo === 'hoy' ? 'hoy' : periodo === 'sem' ? 'semana' : 'mes';
-            thHoras.querySelector('.bp-th-periodo').textContent = label;
-
-            // Columna Costo: visible solo en "mes"
-            colsMes.forEach(el => el.classList.toggle('d-none', periodo !== 'mes'));
-
-            // Celdas de datos
-            document.querySelectorAll('#bpTbody tr').forEach(row => {
-                const tdHoras  = row.querySelector('.bp-td-horas');
-                const tdExtras = row.querySelector('.bp-td-extras');
-                if (!tdHoras) return;
-
-                const total  = tdHoras.dataset[periodo];
-                const extras = tdExtras.dataset[periodo];
-                const extrasNum = parseFloat(extras);
-
-                tdHoras.querySelector('.bp-horas-num').innerHTML =
-                    `${total}<small>h</small>`;
-
-                tdExtras.innerHTML = extrasNum > 0
-                    ? `<span class="bp-extras-num">+${extras}<small>h</small></span>`
-                    : `<span class="bp-steel bp-mono">—</span>`;
-            });
-
-            aplicarFiltros();
-        }
-
-        btnsPeriodo.forEach(btn => {
-            btn.addEventListener('click', () => {
-                btnsPeriodo.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                aplicarPeriodo(btn.dataset.periodo);
-            });
-        });
-
-        // --- FILTROS ---
-        const search    = document.getElementById('bpSearch');
-        const filtroObra = document.getElementById('bpFiltroObra');
-        const filtroRol  = document.getElementById('bpFiltroRol');
-        const rows      = Array.from(document.querySelectorAll('#bpTbody tr'));
-        const empty     = document.getElementById('bpEmpty');
-        const count     = document.getElementById('bpCount');
+        const search = document.getElementById('bpSearch');
+        const categoria = document.getElementById('bpFiltroCategoria');
+        const rows = Array.from(document.querySelectorAll('#bpTbody tr'));
+        const empty = document.getElementById('bpEmpty');
+        const count = document.getElementById('bpCount');
 
         function aplicarFiltros() {
-            const txt  = search.value.trim().toLowerCase();
-            const obra = filtroObra.value.toLowerCase();
-            const rol  = filtroRol.value.toLowerCase();
-            let vis = 0;
+            const txt = search.value.trim().toLowerCase();
+            const cat = categoria.value;
+            let visibles = 0;
 
             rows.forEach(row => {
-                const ok = (!txt  || row.dataset.nombre.includes(txt))
-                        && (!obra || row.dataset.obras.includes(obra))
-                        && (!rol  || row.dataset.roles.includes(rol));
+                const ok = (!txt || row.dataset.nombre.includes(txt)) &&
+                           (!cat || row.dataset.categoria === cat);
                 row.classList.toggle('d-none', !ok);
-                if (ok) vis++;
+                if (ok) visibles++;
             });
 
-            count.textContent = vis;
-            empty.classList.toggle('d-none', vis > 0);
+            count.textContent = visibles;
+            empty.classList.toggle('d-none', visibles > 0);
         }
 
         search.addEventListener('input', aplicarFiltros);
-        filtroObra.addEventListener('change', aplicarFiltros);
-        filtroRol.addEventListener('change', aplicarFiltros);
+        categoria.addEventListener('change', aplicarFiltros);
     })();
 </script>

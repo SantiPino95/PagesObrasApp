@@ -7,6 +7,7 @@ namespace PagesObrasApp.Services
     {
         Task<T?> GetAsync<T>(string endpoint);
         Task<HttpResponseMessage> PostAsync<T>(string endpoint, T data);
+        Task<HttpResponseMessage> PostAsync(string endpoint); // Para endpoints que reciben todo por query string, sin body
         Task<HttpResponseMessage> PutAsync<T>(string endpoint, T data);
         Task<HttpResponseMessage> DeleteAsync(string endpoint);
     }
@@ -30,6 +31,9 @@ namespace PagesObrasApp.Services
 
         public async Task<HttpResponseMessage> PostAsync<T>(string endpoint, T data)
             => await _httpClient.PostAsJsonAsync(endpoint, data);
+
+        public async Task<HttpResponseMessage> PostAsync(string endpoint)
+            => await _httpClient.PostAsync(endpoint, null);
 
         public async Task<HttpResponseMessage> PutAsync<T>(string endpoint, T data)
             => await _httpClient.PutAsJsonAsync(endpoint, data);

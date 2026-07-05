@@ -9,32 +9,27 @@ namespace PagesObrasApp.Pages.Admin
     [Authorize(Policy = "SoloAdmin")]
     public class EmpleadosModel : PageModel
     {
-        private readonly IEmpleadoHttpService _empleadoHttpService;
+        private readonly IApiService _api;
         private readonly IObraHttpService _obraHttpService;
-        private readonly IAsignacionHttpService _asignacionHttpService;
 
-        public EmpleadosModel(
-            IEmpleadoHttpService empleadoHttpService,
-            IObraHttpService obraHttpService,
-            IAsignacionHttpService asignacionHttpService)
+        public EmpleadosModel(IApiService api, IObraHttpService obraHttpService)
         {
-            _empleadoHttpService = empleadoHttpService;
+            _api = api;
             _obraHttpService = obraHttpService;
-            _asignacionHttpService = asignacionHttpService;
         }
 
         public List<EmpleadoListadoDto> Empleados { get; set; } = new();
         public List<ObraListadoDto> Obras { get; set; } = new();
-        public List<EmpleadoObraDto> Asignaciones { get; set; } = new();
+        public List<EmpleadoObraDto> Asignados { get; set; } = new();
 
         [TempData] public string? Mensaje { get; set; }
         [TempData] public string? MensajeTipo { get; set; }
 
         public async Task OnGetAsync()
         {
-            Empleados = await _empleadoHttpService.ObtenerEmpleadosAsync() ?? new();
+            Empleados = await _api.GetAsync<List<EmpleadoListadoDto>>("api/Empleado") ?? new();
             Obras = await _obraHttpService.ObtenerObrasAsync() ?? new();
-            Asignaciones = await _asignacionHttpService.ObtenerAsignacionesAsync() ?? new();
+            Asignados = await _api.GetAsync<List<EmpleadoObraDto>>("api/Empleado/asignados") ?? new();
         }
 
         public async Task<IActionResult> OnPostCrearEmpleadoAsync(
@@ -55,13 +50,15 @@ namespace PagesObrasApp.Pages.Admin
                 Telefono = telefono
             };
 
-            var creado = await _empleadoHttpService.CrearEmpleadoAsync(dto);
-            Mensaje = creado ? $"Empleado \"{nombre} {apellido}\" dado de alta." : "No se pudo crear el empleado.";
-            MensajeTipo = creado ? "ok" : "error";
+            var response = await _api.PostAsync("api/Empleado", dto);
+            Mensaje = response.IsSuccessStatusCode ? $"Empleado \"{nombre} {apellido}\" dado de alta." : "No se pudo crear el empleado.";
+            MensajeTipo = response.IsSuccessStatusCode ? "ok" : "error";
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostAsignarEmpleadoAsync(int idEmpleado, int idObra)
+        // Ruta real confirmada por Swagger: POST /api/Empleado/asignar (sin {id}, todo va en el body)
+        public async Task<IActionResult> OnPostAsignarEmpleadoAsync(
+            int idEmpleado, int idObra, decimal valorHoraAsignado, string rolEnObra)
         {
             if (idEmpleado == 0 || idObra == 0)
             {
@@ -70,9 +67,18 @@ namespace PagesObrasApp.Pages.Admin
                 return RedirectToPage();
             }
 
-            var asignado = await _asignacionHttpService.CrearAsignacionAsync(idEmpleado, idObra);
-            Mensaje = asignado ? "Asignación creada correctamente." : "No se pudo crear la asignación.";
-            MensajeTipo = asignado ? "ok" : "error";
+            var dto = new AsignarEmpleadoDto
+            {
+                IdEmpleado = idEmpleado,
+                IdObra = idObra,
+                RolEnObra = rolEnObra,
+                ValorHoraAsignado = valorHoraAsignado
+            };
+
+            var response = await _api.PostAsync("api/Empleado/asignar", dto);
+
+            Mensaje = response.IsSuccessStatusCode ? "Empleado asignado a la obra correctamente." : "No se pudo asignar (verificá que no esté ya asignado hoy).";
+            MensajeTipo = response.IsSuccessStatusCode ? "ok" : "error";
             return RedirectToPage();
         }
     }

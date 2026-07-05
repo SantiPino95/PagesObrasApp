@@ -5,100 +5,40 @@
     Layout = "_AdminLayout";
     ViewData["Title"] = "Asignación de Empleados";
 
-    // --- Datos de muestra (mock) — reemplazar por Model.* cuando conectemos la API vía DTOs ---
-    var empleados = new[]
-    {
-        new { Id=1, Nombre="Rodrigo Méndez",    Cedula="4.521.887-3", ValorHora=320m },
-        new { Id=2, Nombre="Sebastián Ferreira", Cedula="3.987.654-1", ValorHora=280m },
-        new { Id=3, Nombre="Marcelo Suárez",     Cedula="5.123.456-7", ValorHora=240m },
-        new { Id=4, Nombre="Diego Pereira",      Cedula="4.789.012-5", ValorHora=280m },
-        new { Id=5, Nombre="Luciana Torres",     Cedula="3.456.789-2", ValorHora=320m },
-        new { Id=6, Nombre="Pablo Ríos",         Cedula="5.654.321-9", ValorHora=200m },
-        new { Id=7, Nombre="Carlos Espínola",    Cedula="4.111.222-6", ValorHora=280m },
-        new { Id=8, Nombre="Fabian Núñez",       Cedula="4.333.111-8", ValorHora=200m },
-    };
+    var obraPorId = Model.Obras.ToDictionary(o => o.IdObra, o => o);
 
-    var obras = new[]
+    var porObra = Model.Obras.Select(o => new
     {
-        new { Id=1, Codigo="OB-2026-014", Nombre="Edificio Las Acacias",     Estado="En Progreso" },
-        new { Id=2, Codigo="OB-2026-002", Nombre="Torre Mirador",            Estado="En Progreso" },
-        new { Id=3, Codigo="OB-2026-011", Nombre="Galpón Industrial Ruta 5", Estado="En Progreso" },
-        new { Id=4, Codigo="OB-2026-019", Nombre="Casa Familia Pérez",       Estado="Planificada" },
-        new { Id=5, Codigo="OB-2025-087", Nombre="Reforma Local Comercial",  Estado="Pausada"     },
-    };
-
-    // Tabla Empleado_obra (mock)
-    var asignaciones = new[]
-    {
-        new { Id=1,  IdEmp=1, IdObra=1, Rol="Capataz",  FechaAsig=new DateTime(2026,2,10), ValorHoraAsig=340m },
-        new { Id=2,  IdEmp=2, IdObra=1, Rol="Oficial",  FechaAsig=new DateTime(2026,2,10), ValorHoraAsig=280m },
-        new { Id=3,  IdEmp=7, IdObra=1, Rol="Oficial",  FechaAsig=new DateTime(2026,3,15), ValorHoraAsig=280m },
-        new { Id=4,  IdEmp=6, IdObra=1, Rol="Ayudante", FechaAsig=new DateTime(2026,4,1),  ValorHoraAsig=200m },
-        new { Id=5,  IdEmp=5, IdObra=2, Rol="Capataz",  FechaAsig=new DateTime(2026,5,2),  ValorHoraAsig=320m },
-        new { Id=6,  IdEmp=3, IdObra=2, Rol="Ayudante", FechaAsig=new DateTime(2026,5,2),  ValorHoraAsig=240m },
-        new { Id=7,  IdEmp=4, IdObra=3, Rol="Oficial",  FechaAsig=new DateTime(2026,4,22), ValorHoraAsig=280m },
-        new { Id=8,  IdEmp=8, IdObra=3, Rol="Ayudante", FechaAsig=new DateTime(2026,4,22), ValorHoraAsig=200m },
-        new { Id=9,  IdEmp=7, IdObra=3, Rol="Oficial",  FechaAsig=new DateTime(2026,5,10), ValorHoraAsig=280m },
-        new { Id=10, IdEmp=2, IdObra=4, Rol="Oficial",  FechaAsig=new DateTime(2026,6,1),  ValorHoraAsig=280m },
-        new { Id=11, IdEmp=8, IdObra=5, Rol="Ayudante", FechaAsig=new DateTime(2026,1,15), ValorHoraAsig=200m },
-    };
-
-    // Vista por obra
-    var porObra = obras.Select(o => new
-    {
-        o.Id,
-        o.Codigo,
-        o.Nombre,
+        o.IdObra,
+        o.CodigoFormateado,
+        o.NombreObra,
         o.Estado,
-        Equipo = asignaciones
-            .Where(a => a.IdObra == o.Id)
-            .Select(a => new
-            {
-                a.Id,
-                Empleado = empleados.FirstOrDefault(e => e.Id == a.IdEmp),
-                a.Rol,
-                a.FechaAsig,
-                a.ValorHoraAsig
-            })
-            .OrderBy(x => x.Rol)
-            .ToList()
+        Equipo = Model.Asignaciones.Where(a => a.IdObra == o.IdObra).ToList()
     }).OrderByDescending(o => o.Equipo.Count).ToList();
 
-    // Vista por empleado
-    var porEmpleado = empleados.Select(e => new
+    var porEmpleado = Model.Empleados.Select(e => new
     {
-        e.Id,
-        e.Nombre,
-        e.Cedula,
-        e.ValorHora,
-        Asigs = asignaciones
-            .Where(a => a.IdEmp == e.Id)
-            .Select(a => new
-            {
-                a.Id,
-                Obra = obras.FirstOrDefault(o => o.Id == a.IdObra),
-                a.Rol,
-                a.FechaAsig,
-                a.ValorHoraAsig
-            })
-            .OrderByDescending(x => x.FechaAsig)
-            .ToList()
+        e.IdEmpleado,
+        e.NombreCompleto,
+        e.Categoria,
+        Telefono = e.Telefono ?? "",
+        Asigs = Model.Asignaciones.Where(a => a.IdEmpleado == e.IdEmpleado).ToList()
     }).OrderByDescending(e => e.Asigs.Count).ToList();
 
-    var totalAsignaciones = asignaciones.Length;
-    var empleadosAsignados = asignaciones.Select(a => a.IdEmp).Distinct().Count();
-    var empleadosSinObra = empleados.Length - empleadosAsignados;
-    var obrasConEquipo = asignaciones.Select(a => a.IdObra).Distinct().Count();
-
-    var rolColores = new Dictionary<string, string>
-    {
-        {"Capataz",  "capataz"},
-        {"Oficial",  "oficial"},
-        {"Ayudante", "ayudante"},
-    };
+    var totalAsignaciones = Model.Asignaciones.Count;
+    var empleadosAsignados = Model.Asignaciones.Select(a => a.IdEmpleado).Distinct().Count();
+    var empleadosSinObra = Model.Empleados.Count - empleadosAsignados;
+    var obrasConEquipo = Model.Asignaciones.Select(a => a.IdObra).Distinct().Count();
 }
 
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <div class="admin-dashboard">
+
+    @if (!string.IsNullOrEmpty(Model.Mensaje))
+    {
+        <div class="alert @(Model.MensajeTipo == "ok" ? "alert-success" : "alert-danger")">@Model.Mensaje</div>
+    }
 
     <!-- HEADER -->
     <section class="bp-section">
@@ -113,6 +53,10 @@
         </div>
     </section>
 
+    <p class="bp-nota mb-3">
+        La API todavía no devuelve rol, valor hora asignado ni fecha por cada asignación en <code>GET /api/Empleado/asignados</code> — por eso esta vista solo muestra empleado + obra. Tampoco existe un endpoint para quitar una asignación.
+    </p>
+
     <!-- STAT CARDS -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
@@ -126,14 +70,14 @@
             <div class="bp-stat-card bp-stat-card--accent">
                 <span class="bp-stat-label">Empleados asignados</span>
                 <span class="bp-stat-num bp-stat-num--amber">@empleadosAsignados</span>
-                <span class="bp-stat-sub">de @empleados.Length en nómina</span>
+                <span class="bp-stat-sub">de @Model.Empleados.Count en nómina</span>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="bp-stat-card">
                 <span class="bp-stat-label">Obras con equipo</span>
                 <span class="bp-stat-num">@obrasConEquipo</span>
-                <span class="bp-stat-sub">de @obras.Length obras</span>
+                <span class="bp-stat-sub">de @Model.Obras.Count obras</span>
             </div>
         </div>
         <div class="col-6 col-md-3">
@@ -148,11 +92,11 @@
     <!-- TOGGLE DE VISTA -->
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
         <div class="bp-vista-toggle" role="group">
-            <button class="bp-vista-btn active" data-vista="obras">
+            <button class="bp-vista-btn active" data-vista="obras" type="button">
                 <svg viewBox="0 0 24 24"><path d="M7 21h10M7 21V5l5-2 5 2v16" /></svg>
                 Por obra
             </button>
-            <button class="bp-vista-btn" data-vista="empleados">
+            <button class="bp-vista-btn" data-vista="empleados" type="button">
                 <svg viewBox="0 0 24 24"><circle cx="8" cy="7" r="3" /><path d="M3 20c0-3 2-5 5-5s5 2 5 5" /><circle cx="17" cy="8" r="2.3" /><path d="M14.2 20c.3-2.3 1.7-4 3.8-4s3.4 1.3 3.7 3.4" /></svg>
                 Por empleado
             </button>
@@ -165,9 +109,9 @@
         <div class="row g-3">
             @foreach (var o in porObra)
             {
-                var estadoCls = o.Estado.Replace(" ", "").ToLower();
+                var estadoCls = (o.Estado ?? "").Replace(" ", "").ToLower();
                 <div class="col-12 col-xl-6 bp-obra-wrap"
-                     data-search="@o.Nombre.ToLower() @o.Codigo.ToLower() @string.Join(" ", o.Equipo.Select(e => e.Empleado?.Nombre.ToLower()))">
+                     data-search="@o.NombreObra.ToLower() @o.CodigoFormateado.ToLower() @string.Join(" ", o.Equipo.Select(e => e.NombreCompleto.ToLower()))">
 
                     <div class="bp-obra-card">
 
@@ -175,8 +119,8 @@
                         <div class="bp-obra-header">
                             <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
                                 <div class="min-w-0">
-                                    <div class="bp-obra-nombre">@o.Nombre</div>
-                                    <span class="bp-mono bp-steel">@o.Codigo</span>
+                                    <div class="bp-obra-nombre">@o.NombreObra</div>
+                                    <span class="bp-mono bp-steel">@o.CodigoFormateado</span>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-2 flex-shrink-0">
@@ -191,30 +135,15 @@
                             <div class="bp-equipo-tabla">
                                 <div class="bp-equipo-head">
                                     <span>Empleado</span>
-                                    <span>Rol</span>
-                                    <span>$/h</span>
-                                    <span>Desde</span>
-                                    <span></span>
+                                    <span>Categoría</span>
+                                    <span>Teléfono</span>
                                 </div>
                                 @foreach (var a in o.Equipo)
                                 {
-                                    var rolCls = rolColores.ContainsKey(a.Rol) ? rolColores[a.Rol] : "oficial";
-                                    <div class="bp-equipo-row">
-                                        <div>
-                                            <div class="bp-emp-nombre">@a.Empleado?.Nombre</div>
-                                            <div class="bp-mono bp-steel">@a.Empleado?.Cedula</div>
-                                        </div>
-                                        <div>
-                                            <span class="bp-rol bp-rol--@rolCls">@a.Rol</span>
-                                        </div>
-                                        <div class="bp-mono">$@a.ValorHoraAsig.ToString("N0")</div>
-                                        <div class="bp-mono bp-steel">@a.FechaAsig.ToString("dd/MM/yy")</div>
-                                        <div>
-                                            <button class="bp-remove-btn" title="Quitar asignación"
-                                                    onclick="confirmarQuitar(@a.Id, '@(a.Empleado?.Nombre.Replace("'", "\\'"))', '@o.Nombre.Replace("'", "\\'")')">
-                                                ×
-                                            </button>
-                                        </div>
+                                    <div class="bp-equipo-row" style="grid-template-columns: 1fr auto auto;">
+                                        <div class="bp-emp-nombre">@a.NombreCompleto</div>
+                                        <div><span class="bp-rol bp-rol--oficial">@a.Categoria</span></div>
+                                        <div class="bp-mono bp-steel">@a.Telefono</div>
                                     </div>
                                 }
                             </div>
@@ -243,35 +172,33 @@
                 <thead>
                     <tr>
                         <th>Empleado</th>
-                        <th>Cédula</th>
+                        <th>Categoría</th>
                         <th>Obras asignadas</th>
-                        <th>Roles</th>
-                        <th class="text-end">$/h base</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody id="bpTbodyEmp">
                     @foreach (var e in porEmpleado)
                     {
-                        var searchVal = $"{e.Nombre.ToLower()} {e.Cedula} {string.Join(" ", e.Asigs.Select(a => a.Obra?.Nombre.ToLower()))}";
+                        var searchVal = $"{e.NombreCompleto.ToLower()} {string.Join(" ", e.Asigs.Select(a => a.NombreObra.ToLower()))}";
                         <tr data-search="@searchVal">
                             <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="bp-avatar-sm">@e.Nombre.Substring(0, 1)</div>
-                                    <span class="bp-emp-nombre">@e.Nombre</span>
+                                    <div class="bp-avatar-sm">@e.NombreCompleto.Substring(0, 1)</div>
+                                    <span class="bp-emp-nombre">@e.NombreCompleto</span>
                                 </div>
                             </td>
-                            <td class="bp-mono bp-steel">@e.Cedula</td>
+                            <td><span class="bp-rol bp-rol--oficial">@e.Categoria</span></td>
                             <td>
                                 @if (e.Asigs.Any())
                                 {
                                     <div class="bp-chips-col">
                                         @foreach (var a in e.Asigs)
                                         {
+                                            var estObra = obraPorId.TryGetValue(a.IdObra, out var ob) ? (ob.Estado ?? "") : "";
                                             <span class="bp-chip-obra">
-                                                <span class="bp-chip-dot bp-chip-dot--@(a.Obra?.Estado.Replace(" ", "").ToLower())"></span>
-                                                @a.Obra?.Nombre
-                                                <span class="bp-mono" style="font-size:.68rem;opacity:.7">@a.Obra?.Codigo</span>
+                                                <span class="bp-chip-dot bp-chip-dot--@estObra.Replace(" ", "").ToLower()"></span>
+                                                @a.NombreObra
                                             </span>
                                         }
                                     </div>
@@ -281,25 +208,11 @@
                                     <span class="bp-sin-asig">Sin asignación</span>
                                 }
                             </td>
-                            <td>
-                                <div class="d-flex gap-1 flex-wrap">
-                                    @foreach (var a in e.Asigs)
-                                    {
-                                        var rolCls = rolColores.ContainsKey(a.Rol) ? rolColores[a.Rol] : "oficial";
-                                        <span class="bp-rol bp-rol--@rolCls">@a.Rol</span>
-                                    }
-                                    @if (!e.Asigs.Any())
-                                    {
-                                        <span class="bp-disponible">Disponible</span>
-                                    }
-                                </div>
-                            </td>
-                            <td class="text-end bp-mono">$@e.ValorHora.ToString("N0")</td>
                             <td class="text-end">
                                 <button class="bp-action-btn"
                                         data-bs-toggle="modal"
                                         data-bs-target="#modalAsignar"
-                                        onclick="preseleccionarEmp(@e.Id)">
+                                        onclick="preseleccionarEmp(@e.IdEmpleado)">
                                     + Asignar
                                 </button>
                             </td>
@@ -317,77 +230,55 @@
 <div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bp-modal">
-            <div class="modal-header bp-modal-header">
-                <div>
-                    <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Movimiento de personal</span>
-                    <h5 class="modal-title bp-title">Nueva asignación</h5>
+            <form method="post" asp-page-handler="CrearAsignacion">
+                <div class="modal-header bp-modal-header">
+                    <div>
+                        <span class="bp-eyebrow" style="color:rgba(255,255,255,.65)">Movimiento de personal</span>
+                        <h5 class="modal-title bp-title">Nueva asignación</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body bp-modal-body">
-                <!-- TODO: conectar a OnPostCrearAsignacion cuando esté el HttpClient hacia la API -->
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="bp-label">Empleado</label>
-                        <select id="selectEmpModal" class="bp-select w-100">
-                            <option value="">Seleccionar empleado...</option>
-                            @foreach (var e in empleados)
-                            {
-                                <option value="@e.Id">@e.Nombre (@e.Cedula)</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="bp-label">Obra de destino</label>
-                        <select class="bp-select w-100">
-                            <option value="">Seleccionar obra...</option>
-                            @foreach (var o in obras)
-                            {
-                                <option value="@o.Id">@o.Nombre (@o.Codigo)</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="bp-label">Rol en obra</label>
-                        <select id="selectRolModal" class="bp-select w-100">
-                            <option value="Oficial" selected>Oficial</option>
-                            <option value="Capataz">Capataz</option>
-                            <option value="Ayudante">Ayudante</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="bp-label">Valor hora asignado ($)</label>
-                        <input type="number" id="inputValorHora" min="1" step="10" class="bp-input w-100" placeholder="Ej: 280">
-                    </div>
-                    <div class="col-12">
-                        <label class="bp-label">Fecha de asignación</label>
-                        <input type="date" class="bp-input w-100" value="@DateTime.Today.ToString("yyyy-MM-dd")">
+                <div class="modal-body bp-modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="bp-label">Empleado</label>
+                            <select id="selectEmpModal" name="idEmpleado" class="bp-select w-100" required>
+                                <option value="">Seleccionar empleado...</option>
+                                @foreach (var e in Model.Empleados)
+                                {
+                                    <option value="@e.IdEmpleado">@e.NombreCompleto</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="bp-label">Obra de destino</label>
+                            <select name="idObra" class="bp-select w-100" required>
+                                <option value="">Seleccionar obra...</option>
+                                @foreach (var o in Model.Obras)
+                                {
+                                    <option value="@o.IdObra">@o.NombreObra (@o.CodigoFormateado)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="bp-label">Rol en obra</label>
+                            <select name="rolEnObra" class="bp-select w-100">
+                                <option value="Oficial" selected>Oficial</option>
+                                <option value="Capataz">Capataz</option>
+                                <option value="Ayudante">Ayudante</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="bp-label">Valor hora asignado ($)</label>
+                            <input type="number" name="valorHoraAsignado" min="1" step="10" class="bp-input w-100" placeholder="Ej: 280" required>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer bp-modal-footer">
-                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="bp-btn-primary">Confirmar asignación</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal: Confirmar quitar asignación -->
-<div class="modal fade" id="modalQuitar" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content bp-modal">
-            <div class="modal-header bp-modal-header bp-modal-header--danger">
-                <h5 class="modal-title bp-title">Quitar asignación</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body bp-modal-body">
-                <p id="quitarMsg" style="font-size:.9rem;margin:0"></p>
-            </div>
-            <div class="modal-footer bp-modal-footer">
-                <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="bp-btn-danger">Confirmar</button>
-            </div>
+                <div class="modal-footer bp-modal-footer">
+                    <button type="button" class="bp-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="bp-btn-primary">Confirmar asignación</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -422,566 +313,184 @@
         margin: .15rem 0;
     }
 
-    .bp-title-dark {
-        font-size: 2rem;
-        color: var(--bp-ink);
-    }
+    .bp-title-dark { font-size: 2rem; color: var(--bp-ink); }
+    .bp-section { margin-bottom: 1.75rem; }
+    .bp-mono { font-family: 'JetBrains Mono', monospace; font-size: .82rem; }
+    .bp-steel { color: var(--bp-steel); }
 
-    .bp-section {
-        margin-bottom: 1.75rem;
-    }
-
-    .bp-mono {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: .82rem;
-    }
-
-    .bp-steel {
+    .bp-nota {
+        font-size: 0.82rem;
         color: var(--bp-steel);
-    }
-
-    /* Botones */
-    .bp-btn-primary {
-        font-family: 'Inter', sans-serif;
-        font-weight: 600;
-        font-size: .88rem;
-        background: var(--bp-safety);
-        color: var(--bp-ink);
-        border: none;
+        background: var(--bp-concrete);
+        border: 1px dashed var(--bp-line);
         border-radius: 6px;
-        padding: .55rem 1.1rem;
-        transition: background .2s;
-        cursor: pointer;
+        padding: 0.6rem 0.9rem;
     }
 
-        .bp-btn-primary:hover {
-            background: #d99500;
-        }
+    .bp-btn-primary {
+        font-family: 'Inter', sans-serif; font-weight: 600; font-size: .88rem;
+        background: var(--bp-safety); color: var(--bp-ink); border: none;
+        border-radius: 6px; padding: .55rem 1.1rem; transition: background .2s; cursor: pointer;
+    }
+    .bp-btn-primary:hover { background: #d99500; }
 
     .bp-btn-ghost {
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-        font-size: .88rem;
-        background: transparent;
-        color: var(--bp-steel);
-        border: 1px solid var(--bp-line);
-        border-radius: 6px;
-        padding: .55rem 1.1rem;
-        cursor: pointer;
+        font-family: 'Inter', sans-serif; font-weight: 500; font-size: .88rem;
+        background: transparent; color: var(--bp-steel); border: 1px solid var(--bp-line);
+        border-radius: 6px; padding: .55rem 1.1rem; cursor: pointer;
     }
-
-        .bp-btn-ghost:hover {
-            border-color: var(--bp-steel);
-            color: var(--bp-ink);
-        }
-
-    .bp-btn-danger {
-        font-family: 'Inter', sans-serif;
-        font-weight: 600;
-        font-size: .88rem;
-        background: var(--bp-danger);
-        color: #fff;
-        border: none;
-        border-radius: 6px;
-        padding: .55rem 1.1rem;
-        cursor: pointer;
-    }
-
-        .bp-btn-danger:hover {
-            background: #8f2d23;
-        }
+    .bp-btn-ghost:hover { border-color: var(--bp-steel); color: var(--bp-ink); }
 
     .bp-action-btn {
-        background: none;
-        border: 1px solid var(--bp-line);
-        border-radius: 5px;
-        padding: .2rem .6rem;
-        font-size: .8rem;
-        cursor: pointer;
-        color: var(--bp-steel);
-        transition: border-color .15s, color .15s;
-        white-space: nowrap;
+        background: none; border: 1px solid var(--bp-line); border-radius: 5px;
+        padding: .2rem .6rem; font-size: .8rem; cursor: pointer; color: var(--bp-steel);
+        transition: border-color .15s, color .15s; white-space: nowrap;
     }
-
-        .bp-action-btn:hover {
-            border-color: var(--bp-blueprint);
-            color: var(--bp-blueprint);
-        }
-
-    .bp-remove-btn {
-        background: none;
-        border: 1px solid transparent;
-        border-radius: 4px;
-        width: 22px;
-        height: 22px;
-        font-size: 1rem;
-        line-height: 1;
-        color: var(--bp-steel);
-        cursor: pointer;
-        transition: all .15s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-        .bp-remove-btn:hover {
-            border-color: var(--bp-danger);
-            color: var(--bp-danger);
-            background: #fbf0ef;
-        }
+    .bp-action-btn:hover { border-color: var(--bp-blueprint); color: var(--bp-blueprint); }
 
     .bp-link-btn {
-        background: none;
-        border: none;
-        padding: 0;
-        color: var(--bp-blueprint);
-        font-size: .82rem;
-        font-weight: 500;
-        cursor: pointer;
-        text-decoration: none;
+        background: none; border: none; padding: 0; color: var(--bp-blueprint);
+        font-size: .82rem; font-weight: 500; cursor: pointer; text-decoration: none;
     }
+    .bp-link-btn:hover { color: var(--bp-safety); }
 
-        .bp-link-btn:hover {
-            color: var(--bp-safety);
-        }
-
-    /* Stat cards */
     .bp-stat-card {
-        background: #fff;
-        border: 1px solid var(--bp-line);
-        border-radius: 8px;
-        padding: 1rem 1.1rem;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        gap: .15rem;
+        background: #fff; border: 1px solid var(--bp-line); border-radius: 8px;
+        padding: 1rem 1.1rem; height: 100%; display: flex; flex-direction: column; gap: .15rem;
     }
-
-    .bp-stat-card--accent {
-        border-left: 3px solid var(--bp-safety);
-    }
-
-    .bp-stat-card--alerta {
-        border-left: 3px solid var(--bp-blueprint-light);
-    }
-
+    .bp-stat-card--accent { border-left: 3px solid var(--bp-safety); }
+    .bp-stat-card--alerta { border-left: 3px solid var(--bp-blueprint-light); }
     .bp-stat-label {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: .68rem;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        color: var(--bp-steel);
+        font-family: 'JetBrains Mono', monospace; font-size: .68rem; letter-spacing: .08em;
+        text-transform: uppercase; color: var(--bp-steel);
     }
-
     .bp-stat-num {
-        font-family: 'Barlow Condensed', sans-serif;
-        font-size: 2rem;
-        font-weight: 600;
-        color: var(--bp-ink);
-        line-height: 1.1;
+        font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 600;
+        color: var(--bp-ink); line-height: 1.1;
     }
+    .bp-stat-num--amber { color: var(--bp-safety); }
+    .bp-stat-num--rojo { color: var(--bp-blueprint-light); }
+    .bp-stat-sub { font-size: .75rem; color: var(--bp-steel); }
 
-    .bp-stat-num--amber {
-        color: var(--bp-safety);
-    }
-
-    .bp-stat-num--rojo {
-        color: var(--bp-blueprint-light);
-    }
-
-    .bp-stat-sub {
-        font-size: .75rem;
-        color: var(--bp-steel);
-    }
-
-    /* Toggle de vista */
     .bp-vista-toggle {
-        display: flex;
-        background: var(--bp-concrete);
-        border: 1px solid var(--bp-line);
-        border-radius: 8px;
-        padding: 3px;
-        gap: 3px;
+        display: flex; background: var(--bp-concrete); border: 1px solid var(--bp-line);
+        border-radius: 8px; padding: 3px; gap: 3px;
     }
-
     .bp-vista-btn {
-        display: flex;
-        align-items: center;
-        gap: .4rem;
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-        font-size: .85rem;
-        background: transparent;
-        border: none;
-        border-radius: 6px;
-        padding: .38rem .85rem;
-        color: var(--bp-steel);
-        cursor: pointer;
+        display: flex; align-items: center; gap: .4rem; font-family: 'Inter', sans-serif;
+        font-weight: 500; font-size: .85rem; background: transparent; border: none;
+        border-radius: 6px; padding: .38rem .85rem; color: var(--bp-steel); cursor: pointer;
         transition: background .15s, color .15s;
     }
+    .bp-vista-btn svg {
+        width: 15px; height: 15px; fill: none; stroke: currentColor;
+        stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .bp-vista-btn.active { background: #fff; color: var(--bp-blueprint); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
 
-        .bp-vista-btn svg {
-            width: 15px;
-            height: 15px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 1.8;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .bp-vista-btn.active {
-            background: #fff;
-            color: var(--bp-blueprint);
-            box-shadow: 0 1px 4px rgba(0,0,0,.1);
-        }
-
-    /* Input búsqueda */
     .bp-input, .bp-select {
-        font-family: 'Inter', sans-serif;
-        font-size: .88rem;
-        border: 1px solid var(--bp-line);
-        border-radius: 6px;
-        padding: .5rem .8rem;
-        background: #fff;
-        color: var(--bp-ink);
+        font-family: 'Inter', sans-serif; font-size: .88rem; border: 1px solid var(--bp-line);
+        border-radius: 6px; padding: .5rem .8rem; background: #fff; color: var(--bp-ink);
     }
-
-        .bp-input:focus, .bp-select:focus {
-            outline: none;
-            border-color: var(--bp-blueprint-light);
-            box-shadow: 0 0 0 3px rgba(45,92,140,.12);
-        }
-
-    #bpSearch {
-        min-width: 220px;
+    .bp-input:focus, .bp-select:focus {
+        outline: none; border-color: var(--bp-blueprint-light); box-shadow: 0 0 0 3px rgba(45,92,140,.12);
     }
+    #bpSearch { min-width: 220px; }
 
-    /* Cards por obra */
-    .bp-obra-card {
-        background: #fff;
-        border: 1px solid var(--bp-line);
-        border-radius: 10px;
-        overflow: hidden;
-        height: 100%;
-    }
-
+    .bp-obra-card { background: #fff; border: 1px solid var(--bp-line); border-radius: 10px; overflow: hidden; height: 100%; }
     .bp-obra-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 1rem 1.1rem;
-        border-bottom: 1px solid var(--bp-line);
-        background: var(--bp-concrete);
+        display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        padding: 1rem 1.1rem; border-bottom: 1px solid var(--bp-line); background: var(--bp-concrete);
     }
-
-    .bp-obra-nombre {
-        font-family: 'Barlow Condensed', sans-serif;
-        font-weight: 600;
-        font-size: 1.05rem;
-    }
-
+    .bp-obra-nombre { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 1.05rem; }
     .bp-equipo-count {
-        font-family: 'Barlow Condensed', sans-serif;
-        font-weight: 700;
-        font-size: 1.5rem;
-        color: var(--bp-blueprint);
-        line-height: 1;
+        font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.5rem;
+        color: var(--bp-blueprint); line-height: 1;
     }
+    .bp-equipo-count small { font-size: .65rem; font-weight: 500; color: var(--bp-steel); }
 
-        .bp-equipo-count small {
-            font-size: .65rem;
-            font-weight: 500;
-            color: var(--bp-steel);
-        }
-
-    /* Tabla interna del equipo */
-    .bp-equipo-tabla {
-        padding: .5rem 0;
-    }
-
+    .bp-equipo-tabla { padding: .5rem 0; }
     .bp-equipo-head {
-        display: grid;
-        grid-template-columns: 1fr auto auto auto 28px;
-        gap: .5rem;
-        padding: .4rem 1rem;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: .62rem;
-        letter-spacing: .1em;
-        text-transform: uppercase;
-        color: var(--bp-steel);
-        border-bottom: 1px solid var(--bp-line);
+        display: grid; grid-template-columns: 1fr auto auto; gap: .5rem; padding: .4rem 1rem;
+        font-family: 'JetBrains Mono', monospace; font-size: .62rem; letter-spacing: .1em;
+        text-transform: uppercase; color: var(--bp-steel); border-bottom: 1px solid var(--bp-line);
     }
-
     .bp-equipo-row {
-        display: grid;
-        grid-template-columns: 1fr auto auto auto 28px;
-        gap: .5rem;
-        padding: .6rem 1rem;
-        align-items: center;
-        border-bottom: 1px solid var(--bp-line);
-        transition: background .1s;
+        display: grid; gap: .5rem; padding: .6rem 1rem; align-items: center;
+        border-bottom: 1px solid var(--bp-line); transition: background .1s;
     }
+    .bp-equipo-row:last-child { border-bottom: none; }
+    .bp-equipo-row:hover { background: #fafaf8; }
+    .bp-emp-nombre { font-weight: 600; font-size: .88rem; }
 
-        .bp-equipo-row:last-child {
-            border-bottom: none;
-        }
+    .bp-badge { font-size: .68rem; font-weight: 600; padding: .18rem .55rem; border-radius: 100px; white-space: nowrap; }
+    .bp-badge--enprogreso { background: #E8F0FC; color: #2D6CDF; }
+    .bp-badge--planificada { background: #EAECEE; color: var(--bp-steel); }
+    .bp-badge--pausada { background: #FFF8E8; color: #92670a; }
+    .bp-badge--finalizada { background: #EAF4EE; color: var(--bp-ok); }
+    .bp-badge--cancelada { background: #FBF0EF; color: var(--bp-danger); }
 
-        .bp-equipo-row:hover {
-            background: #fafaf8;
-        }
-
-    .bp-emp-nombre {
-        font-weight: 600;
-        font-size: .88rem;
-    }
-
-    /* Badges */
-    .bp-badge {
-        font-size: .68rem;
-        font-weight: 600;
-        padding: .18rem .55rem;
-        border-radius: 100px;
-        white-space: nowrap;
-    }
-
-    .bp-badge--enprogreso {
-        background: #E8F0FC;
-        color: #2D6CDF;
-    }
-
-    .bp-badge--planificada {
-        background: #EAECEE;
-        color: var(--bp-steel);
-    }
-
-    .bp-badge--pausada {
-        background: #FFF8E8;
-        color: #92670a;
-    }
-
-    .bp-badge--finalizada {
-        background: #EAF4EE;
-        color: var(--bp-ok);
-    }
-
-    .bp-badge--cancelada {
-        background: #FBF0EF;
-        color: var(--bp-danger);
-    }
-
-    .bp-rol {
-        font-size: .68rem;
-        font-weight: 600;
-        padding: .15rem .5rem;
-        border-radius: 4px;
-        white-space: nowrap;
-    }
-
-    .bp-rol--capataz {
-        background: #E8EFF6;
-        color: var(--bp-blueprint);
-    }
-
-    .bp-rol--oficial {
-        background: #EAECEE;
-        color: var(--bp-steel);
-    }
-
-    .bp-rol--ayudante {
-        background: var(--bp-concrete);
-        color: #888;
-        border: 1px solid var(--bp-line);
-    }
+    .bp-rol { font-size: .68rem; font-weight: 600; padding: .15rem .5rem; border-radius: 4px; white-space: nowrap; }
+    .bp-rol--capataz { background: #E8EFF6; color: var(--bp-blueprint); }
+    .bp-rol--oficial { background: #EAECEE; color: var(--bp-steel); }
+    .bp-rol--ayudante { background: var(--bp-concrete); color: #888; border: 1px solid var(--bp-line); }
 
     .bp-sin-equipo {
-        padding: 1.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        color: var(--bp-steel);
-        font-size: .85rem;
+        padding: 1.25rem; display: flex; align-items: center; justify-content: space-between;
+        gap: 1rem; color: var(--bp-steel); font-size: .85rem;
     }
 
-    /* Vista por empleado — tabla */
-    .bp-table-wrap {
-        background: #fff;
-        border: 1px solid var(--bp-line);
-        border-radius: 8px;
-        overflow: hidden;
+    .bp-table-wrap { background: #fff; border: 1px solid var(--bp-line); border-radius: 8px; overflow: hidden; }
+    .bp-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .bp-table thead th {
+        font-family: 'JetBrains Mono', monospace; font-size: .68rem; letter-spacing: .08em;
+        text-transform: uppercase; color: var(--bp-steel); text-align: left; padding: .75rem 1rem;
+        background: var(--bp-concrete); border-bottom: 1px solid var(--bp-line);
     }
-
-    .bp-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: .88rem;
-    }
-
-        .bp-table thead th {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: .68rem;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-            color: var(--bp-steel);
-            text-align: left;
-            padding: .75rem 1rem;
-            background: var(--bp-concrete);
-            border-bottom: 1px solid var(--bp-line);
-        }
-
-        .bp-table tbody td {
-            padding: .75rem 1rem;
-            border-bottom: 1px solid var(--bp-line);
-            vertical-align: middle;
-        }
-
-        .bp-table tbody tr:hover {
-            background: #fafaf8;
-        }
-
-        .bp-table tbody tr:last-child td {
-            border-bottom: none;
-        }
+    .bp-table tbody td { padding: .75rem 1rem; border-bottom: 1px solid var(--bp-line); vertical-align: middle; }
+    .bp-table tbody tr:hover { background: #fafaf8; }
+    .bp-table tbody tr:last-child td { border-bottom: none; }
 
     .bp-avatar-sm {
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        flex-shrink: 0;
-        background: var(--bp-blueprint);
-        color: #fff;
-        font-family: 'Barlow Condensed', sans-serif;
-        font-weight: 700;
-        font-size: 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0; background: var(--bp-blueprint);
+        color: #fff; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1rem;
+        display: flex; align-items: center; justify-content: center;
     }
 
-    .bp-chips-col {
-        display: flex;
-        flex-direction: column;
-        gap: .3rem;
-    }
+    .bp-chips-col { display: flex; flex-direction: column; gap: .3rem; }
+    .bp-chip-obra { display: flex; align-items: center; gap: .4rem; font-size: .78rem; }
+    .bp-chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .bp-chip-dot--enprogreso { background: #2D6CDF; }
+    .bp-chip-dot--planificada { background: var(--bp-steel); }
+    .bp-chip-dot--pausada { background: var(--bp-safety); }
+    .bp-chip-dot--finalizada { background: var(--bp-ok); }
+    .bp-chip-dot--cancelada { background: var(--bp-danger); }
 
-    .bp-chip-obra {
-        display: flex;
-        align-items: center;
-        gap: .4rem;
-        font-size: .78rem;
-    }
+    .bp-sin-asig { font-size: .8rem; color: var(--bp-steel); font-style: italic; }
 
-    .bp-chip-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    .bp-chip-dot--enprogreso {
-        background: #2D6CDF;
-    }
-
-    .bp-chip-dot--planificada {
-        background: var(--bp-steel);
-    }
-
-    .bp-chip-dot--pausada {
-        background: var(--bp-safety);
-    }
-
-    .bp-chip-dot--finalizada {
-        background: var(--bp-ok);
-    }
-
-    .bp-chip-dot--cancelada {
-        background: var(--bp-danger);
-    }
-
-    .bp-sin-asig {
-        font-size: .8rem;
-        color: var(--bp-steel);
-        font-style: italic;
-    }
-
-    .bp-disponible {
-        font-size: .72rem;
-        font-weight: 600;
-        padding: .15rem .5rem;
-        border-radius: 4px;
-        background: #EAF4EE;
-        color: var(--bp-ok);
-    }
-
-    /* Modal */
-    .bp-modal {
-        border: none;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .bp-modal-header {
-        background: var(--bp-blueprint);
-        border: none;
-        padding: 1.25rem 1.5rem;
-    }
-
-    .bp-modal-header--danger {
-        background: var(--bp-danger);
-    }
-
-    .bp-modal-header .bp-title {
-        color: #fff;
-        font-size: 1.4rem;
-    }
-
-    .bp-modal-body {
-        padding: 1.5rem;
-        background: var(--bp-concrete);
-    }
-
-    .bp-modal-footer {
-        border-top: 1px solid var(--bp-line);
-        padding: 1rem 1.5rem;
-    }
-
+    .bp-modal { border: none; border-radius: 10px; overflow: hidden; }
+    .bp-modal-header { background: var(--bp-blueprint); border: none; padding: 1.25rem 1.5rem; }
+    .bp-modal-header .bp-title { color: #fff; font-size: 1.4rem; }
+    .bp-modal-body { padding: 1.5rem; background: var(--bp-concrete); }
+    .bp-modal-footer { border-top: 1px solid var(--bp-line); padding: 1rem 1.5rem; }
     .bp-label {
-        display: block;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: .68rem;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        color: var(--bp-steel);
-        margin-bottom: .3rem;
+        display: block; font-family: 'JetBrains Mono', monospace; font-size: .68rem;
+        letter-spacing: .08em; text-transform: uppercase; color: var(--bp-steel); margin-bottom: .3rem;
     }
-
-    .bp-empty {
-        text-align: center;
-        padding: 2.5rem;
-        color: var(--bp-steel);
-    }
+    .bp-empty { text-align: center; padding: 2.5rem; color: var(--bp-steel); }
 
     @@media (max-width: 576px) {
-        .bp-equipo-head, .bp-equipo-row {
-            grid-template-columns: 1fr auto auto 28px;
-        }
-
-            .bp-equipo-head span:nth-child(3),
-            .bp-equipo-row div:nth-child(3) {
-                display: none;
-            }
+        .bp-equipo-head, .bp-equipo-row { grid-template-columns: 1fr auto !important; }
+        .bp-equipo-head span:nth-child(3), .bp-equipo-row div:nth-child(3) { display: none; }
     }
 </style>
 
 <script>
     (function () {
-        // ── Toggle de vista
-        const btnObras    = document.querySelector('[data-vista="obras"]');
-        const btnEmp      = document.querySelector('[data-vista="empleados"]');
-        const vistaObras  = document.getElementById('vistaObras');
-        const vistaEmp    = document.getElementById('vistaEmpleados');
+        const btnObras   = document.querySelector('[data-vista="obras"]');
+        const btnEmp     = document.querySelector('[data-vista="empleados"]');
+        const vistaObras = document.getElementById('vistaObras');
+        const vistaEmp   = document.getElementById('vistaEmpleados');
 
         btnObras.addEventListener('click', () => {
             btnObras.classList.add('active'); btnEmp.classList.remove('active');
@@ -994,7 +503,6 @@
             aplicarFiltro();
         });
 
-        // ── Búsqueda unificada
         const search = document.getElementById('bpSearch');
 
         function aplicarFiltro() {
@@ -1002,8 +510,8 @@
             const enObras = !vistaObras.classList.contains('d-none');
 
             if (enObras) {
-                const cards  = document.querySelectorAll('.bp-obra-wrap');
-                const empty  = document.getElementById('bpEmptyObras');
+                const cards = document.querySelectorAll('.bp-obra-wrap');
+                const empty = document.getElementById('bpEmptyObras');
                 let vis = 0;
                 cards.forEach(c => {
                     const ok = !txt || c.dataset.search.includes(txt);
@@ -1012,7 +520,7 @@
                 });
                 empty.classList.toggle('d-none', vis > 0);
             } else {
-                const rows  = document.querySelectorAll('#bpTbodyEmp tr');
+                const rows = document.querySelectorAll('#bpTbodyEmp tr');
                 const empty = document.getElementById('bpEmptyEmp');
                 let vis = 0;
                 rows.forEach(r => {
@@ -1026,19 +534,9 @@
 
         search.addEventListener('input', aplicarFiltro);
 
-        // ── Preseleccionar empleado desde vista por empleado
-        window.preseleccionarEmp = function(id) {
+        window.preseleccionarEmp = function (id) {
             const sel = document.getElementById('selectEmpModal');
             if (sel) sel.value = id;
-        };
-
-        // ── Confirmar quitar asignación
-        window.confirmarQuitar = function(id, empNombre, obraNombre) {
-            document.getElementById('quitarMsg').innerHTML =
-                `¿Confirmás quitar a <strong>${empNombre}</strong> de la obra <strong>${obraNombre}</strong>?
-                 <br><small style="color:#5B6670;margin-top:.4rem;display:block">Esta acción no se puede deshacer.</small>`;
-            new bootstrap.Modal(document.getElementById('modalQuitar')).show();
-            // TODO: al confirmar, llamar a OnPostQuitarAsignacion(id) via fetch hacia la API
         };
     })();
 </script>

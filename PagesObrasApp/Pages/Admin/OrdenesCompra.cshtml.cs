@@ -9,18 +9,11 @@ namespace PagesObrasApp.Pages.Admin
     [Authorize(Policy = "SoloAdmin")]
     public class OrdenesCompraModel : PageModel
     {
-        private readonly IOrdenCompraHttpService _ordenCompraHttpService;
-        private readonly IProveedorHttpService _proveedorHttpService;
-        private readonly IMaterialHttpService _materialHttpService;
+        private readonly IApiService _api;
 
-        public OrdenesCompraModel(
-            IOrdenCompraHttpService ordenCompraHttpService,
-            IProveedorHttpService proveedorHttpService,
-            IMaterialHttpService materialHttpService)
+        public OrdenesCompraModel(IApiService api)
         {
-            _ordenCompraHttpService = ordenCompraHttpService;
-            _proveedorHttpService = proveedorHttpService;
-            _materialHttpService = materialHttpService;
+            _api = api;
         }
 
         public List<OrdenCompraListadoDto> Ordenes { get; set; } = new();
@@ -32,9 +25,9 @@ namespace PagesObrasApp.Pages.Admin
 
         public async Task OnGetAsync()
         {
-            Ordenes = await _ordenCompraHttpService.ObtenerOrdenesAsync() ?? new();
-            Proveedores = await _proveedorHttpService.ObtenerProveedoresAsync() ?? new();
-            Materiales = await _materialHttpService.ObtenerMaterialesAsync() ?? new();
+            Ordenes = await _api.GetAsync<List<OrdenCompraListadoDto>>("api/OrdenesCompra") ?? new();
+            Proveedores = await _api.GetAsync<List<ProveedorListadoDto>>("api/Proveedores") ?? new();
+            Materiales = await _api.GetAsync<List<MaterialListadoDto>>("api/Materiales") ?? new();
         }
 
         public async Task<IActionResult> OnPostCrearOrdenAsync(
@@ -66,12 +59,13 @@ namespace PagesObrasApp.Pages.Admin
                 Detalles = detalles
             };
 
-            var creada = await _ordenCompraHttpService.CrearOrdenAsync(dto);
-            Mensaje = creada ? "Orden de compra creada correctamente." : "No se pudo crear la orden.";
-            MensajeTipo = creada ? "ok" : "error";
+            var response = await _api.PostAsync("api/OrdenesCompra", dto);
+            Mensaje = response.IsSuccessStatusCode ? "Orden de compra creada correctamente." : "No se pudo crear la orden.";
+            MensajeTipo = response.IsSuccessStatusCode ? "ok" : "error";
             return RedirectToPage();
         }
 
+        // ── El botón que pediste al principio: suma al stock ──
         public async Task<IActionResult> OnPostConfirmarEntregaAsync(int id)
         {
             if (id == 0)
@@ -81,11 +75,9 @@ namespace PagesObrasApp.Pages.Admin
                 return RedirectToPage();
             }
 
-            // El servicio se encarga de: cambiar Estado_Entrega a "Entregado"
-            // y sumar cada Cantidad_Pedida al Stock_Material correspondiente
-            var confirmada = await _ordenCompraHttpService.ConfirmarEntregaAsync(id);
-            Mensaje = confirmada ? "Entrega confirmada. Stock actualizado." : "No se pudo confirmar la entrega.";
-            MensajeTipo = confirmada ? "ok" : "error";
+            var response = await _api.PutAsync<object?>($"api/OrdenesCompra/{id}/confirmar-entrega", null);
+            Mensaje = response.IsSuccessStatusCode ? "Entrega confirmada. Stock actualizado." : "No se pudo confirmar la entrega.";
+            MensajeTipo = response.IsSuccessStatusCode ? "ok" : "error";
             return RedirectToPage();
         }
     }

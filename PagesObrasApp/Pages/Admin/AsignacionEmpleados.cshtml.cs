@@ -9,17 +9,12 @@ namespace PagesObrasApp.Pages.Admin
     [Authorize(Policy = "SoloAdmin")]
     public class AsignacionEmpleadosModel : PageModel
     {
-        private readonly IAsignacionHttpService _asignacionHttpService;
-        private readonly IEmpleadoHttpService _empleadoHttpService;
+        private readonly IApiService _api;
         private readonly IObraHttpService _obraHttpService;
 
-        public AsignacionEmpleadosModel(
-            IAsignacionHttpService asignacionHttpService,
-            IEmpleadoHttpService empleadoHttpService,
-            IObraHttpService obraHttpService)
+        public AsignacionEmpleadosModel(IApiService api, IObraHttpService obraHttpService)
         {
-            _asignacionHttpService = asignacionHttpService;
-            _empleadoHttpService = empleadoHttpService;
+            _api = api;
             _obraHttpService = obraHttpService;
         }
 
@@ -32,12 +27,14 @@ namespace PagesObrasApp.Pages.Admin
 
         public async Task OnGetAsync()
         {
-            Asignaciones = await _asignacionHttpService.ObtenerAsignacionesAsync() ?? new();
-            Empleados = await _empleadoHttpService.ObtenerEmpleadosAsync() ?? new();
+            Asignaciones = await _api.GetAsync<List<EmpleadoObraDto>>("api/Empleado/asignados") ?? new();
+            Empleados = await _api.GetAsync<List<EmpleadoListadoDto>>("api/Empleado") ?? new();
             Obras = await _obraHttpService.ObtenerObrasAsync() ?? new();
         }
 
-        public async Task<IActionResult> OnPostCrearAsignacionAsync(int idEmpleado, int idObra)
+        // ── NUEVO ──
+        public async Task<IActionResult> OnPostCrearAsignacionAsync(
+            int idEmpleado, int idObra, decimal valorHoraAsignado, string rolEnObra)
         {
             if (idEmpleado == 0 || idObra == 0)
             {
@@ -46,12 +43,15 @@ namespace PagesObrasApp.Pages.Admin
                 return RedirectToPage();
             }
 
-            var creada = await _asignacionHttpService.CrearAsignacionAsync(idEmpleado, idObra);
-            Mensaje = creada ? "Asignación creada correctamente." : "No se pudo crear la asignación.";
-            MensajeTipo = creada ? "ok" : "error";
+            var dto = new { IdObra = idObra, ValorHoraAsignado = valorHoraAsignado, RolEnObra = rolEnObra };
+            var response = await _api.PostAsync($"api/Empleado/{idEmpleado}/asignar", dto);
+
+            Mensaje = response.IsSuccessStatusCode ? "Asignación creada correctamente." : "No se pudo crear la asignación.";
+            MensajeTipo = response.IsSuccessStatusCode ? "ok" : "error";
             return RedirectToPage();
         }
 
+        // ── NUEVO ──
         public async Task<IActionResult> OnPostQuitarAsignacionAsync(int idEmpleado, int idObra)
         {
             if (idEmpleado == 0 || idObra == 0)
@@ -61,9 +61,10 @@ namespace PagesObrasApp.Pages.Admin
                 return RedirectToPage();
             }
 
-            var eliminada = await _asignacionHttpService.EliminarAsignacionAsync(idEmpleado, idObra);
-            Mensaje = eliminada ? "Asignación eliminada correctamente." : "No se pudo eliminar la asignación.";
-            MensajeTipo = eliminada ? "ok" : "error";
+            var response = await _api.DeleteAsync($"api/Empleado/{idEmpleado}/asignar/{idObra}");
+
+            Mensaje = response.IsSuccessStatusCode ? "Asignación eliminada correctamente." : "No se pudo eliminar la asignación.";
+            MensajeTipo = response.IsSuccessStatusCode ? "ok" : "error";
             return RedirectToPage();
         }
     }
