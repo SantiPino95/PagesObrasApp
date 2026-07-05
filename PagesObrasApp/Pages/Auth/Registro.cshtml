@@ -200,6 +200,52 @@
 
                 <form method="post" id="formRegistro">
 
+                    <label class="auth-label" for="nombre">Nombre</label>
+                    <input type="text"
+                           id="nombre"
+                           name="nombre"
+                           class="auth-input"
+                           placeholder="Ej: Rodrigo"
+                           autocomplete="given-name"
+                           required>
+
+                    <label class="auth-label" for="apellido">Apellido</label>
+                    <input type="text"
+                           id="apellido"
+                           name="apellido"
+                           class="auth-input"
+                           placeholder="Ej: Méndez"
+                           autocomplete="family-name"
+                           required>
+
+                    <label class="auth-label" for="cedula">Cédula</label>
+                    <input type="text"
+                           id="cedula"
+                           name="cedula"
+                           class="auth-input"
+                           placeholder="Ej: 4.521.887-3"
+                           autocomplete="off"
+                           required>
+
+                    <label class="auth-label" for="telefono">Teléfono</label>
+                    <input type="text"
+                           id="telefono"
+                           name="telefono"
+                           class="auth-input"
+                           placeholder="Ej: 099 112 233"
+                           autocomplete="tel">
+
+                    <label class="auth-label" for="categoria">Categoría</label>
+                    <select id="categoria" name="categoria" class="auth-input" required>
+                        <option value="">Seleccioná tu categoría...</option>
+                        <option value="Oficial">Oficial</option>
+                        <option value="Ayudante">Ayudante</option>
+                        <option value="Capataz">Capataz</option>
+                        <option value="Ingeniero">Ingeniero</option>
+                        <option value="Administrativo">Administrativo</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+
                     <label class="auth-label" for="email">Email</label>
                     <input type="email"
                            id="email"

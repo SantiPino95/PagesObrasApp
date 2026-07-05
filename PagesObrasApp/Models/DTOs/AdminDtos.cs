@@ -92,7 +92,18 @@ namespace PagesObrasApp.Models
         public string Categoria { get; set; } = "";   // obligatorio
         public string? Telefono { get; set; }
     }
-
+    /// <summary>
+    /// Body para POST /api/Empleado/asignar.
+    /// Ojo: la ruta NO lleva {id} — el idEmpleado va dentro del body, junto con idObra, rolEnObra y valorHoraAsignado.
+    /// No existe endpoint para "quitar" asignación todavía.
+    /// </summary>
+    public class AsignarEmpleadoDto
+    {
+        public int IdEmpleado { get; set; }
+        public int IdObra { get; set; }
+        public string RolEnObra { get; set; } = "";
+        public decimal ValorHoraAsignado { get; set; }
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // HERRAMIENTAS  ←  HerramientasDTOs.cs
@@ -458,7 +469,7 @@ namespace PagesObrasApp.Models
         public string NombreProveedor { get; set; } = "";
         public DateTime FechaPedido { get; set; }
         public decimal MontoTotal { get; set; }
-        public string EstadoEntrega { get; set; } = "Pendiente";
+        public string EstadoEntrega { get; set; } = "";
         public List<DetalleOrdenDto> Detalles { get; set; } = new();
     }
 
@@ -468,18 +479,11 @@ namespace PagesObrasApp.Models
         public string NombreMaterial { get; set; } = "";
         public string UnidadMedida { get; set; } = "";
         public decimal CantidadPedida { get; set; }
-        public decimal PrecioUnitario { get; set; }
-
-        // Calculado: CantidadPedida × PrecioUnitario
-        public decimal Subtotal => CantidadPedida * PrecioUnitario;
-
-        // Stock actual al momento de la orden — útil para el modal de impacto
+        public decimal PrecioUnitarioCompra { get; set; }
         public decimal StockActual { get; set; }
+        public decimal Subtotal => CantidadPedida * PrecioUnitarioCompra;
     }
 
-    /// <summary>
-    /// Body para POST /api/ordenes-compra.
-    /// </summary>
     public class CrearOrdenCompraDto
     {
         public int IdProveedor { get; set; }
@@ -568,33 +572,48 @@ namespace PagesObrasApp.Models
     // ═══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Body para POST /api/auth/login.
+    /// Body para POST /api/Auth/login.
+    /// Ojo: el backend espera "password", no "contrasena".
     /// </summary>
     public class LoginDto
     {
         public string Email { get; set; } = "";
-        public string Contrasena { get; set; } = "";
+        public string Password { get; set; } = "";
     }
 
     /// <summary>
-    /// Lo que devuelve POST /api/auth/login si las credenciales son correctas.
+    /// Lo que devuelve POST /api/Auth/login si las credenciales son correctas.
+    /// TODO: confirmar contra el Swagger real de tu compañero si el login
+    /// devuelve IdEmpleado (necesario para la claim "IdEmpleado" en Login.cshtml.cs).
+    /// Si no lo devuelve, hay que sacar esa claim del login.
     /// </summary>
     public class LoginResponseDto
     {
+        public string Token { get; set; } = "";
         public int IdUsuario { get; set; }
-        public string Nombre { get; set; } = "";
         public string Email { get; set; } = "";
-        public string Rol { get; set; } = "";    // "Administrador" | "Capataz" | "Empleado"
-        public string Estado { get; set; } = "";    // "Activo" | "Pendiente" | "Suspendido"
+        public string NombreCompleto { get; set; } = "";
+        public string Rol { get; set; } = "";
+        public DateTime Expira { get; set; }
         public int? IdEmpleado { get; set; }
     }
 
     /// <summary>
-    /// Body para POST /api/auth/registro.
+    /// Body para POST /api/Auth/registro.
+    /// Ojo: el backend crea Usuario + Empleado juntos, por eso pide todos estos campos.
+    /// "IdRol" es obligatorio aunque el registro público quede en Estado="Pendiente";
+    /// el admin lo reasigna después vía AprobarUsuarioDto.
     /// </summary>
     public class RegistroDto
     {
         public string Email { get; set; } = "";
-        public string Contrasena { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string Nombre { get; set; } = "";
+        public string Apellido { get; set; } = "";
+        public string Cedula { get; set; } = "";
+        public string? Telefono { get; set; }
+        public decimal ValorHora { get; set; } = 0;
+        public string Categoria { get; set; } = "";
+        public int IdRol { get; set; }
     }
 }
