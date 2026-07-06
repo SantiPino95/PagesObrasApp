@@ -1,3 +1,7 @@
+# Carpetas de compilación de C#
+bin/
+obj/
+
 # Archivos temporales de Visual Studio
 .vs/
 *.user
