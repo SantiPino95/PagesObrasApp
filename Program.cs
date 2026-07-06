@@ -45,7 +45,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddHttpClient("API", client =>
 {
     var apiUrl = builder.Configuration["ApiBaseUrl"];
-    client.BaseAddress = new Uri(apiUrl ?? "https://localhost:7259/");
+    client.BaseAddress = new Uri(apiUrl ?? " https://left-groom-whomever.ngrok-free.dev/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 

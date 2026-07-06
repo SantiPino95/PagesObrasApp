@@ -415,7 +415,14 @@
             <a href="/Admin" class="bp-brand">Constructora <span>·</span> Admin</a>
         </div>
         <div class="bp-topbar-right">
-            <span class="bp-topbar-user">@User.Identity?.Name</span>
+            @if (User.Identity is { IsAuthenticated: true })
+            {
+                <span class="bp-topbar-user">Hola, @User.Identity.Name</span>
+            }
+            else
+            {
+                <span class="bp-topbar-user">Invitado</span>
+            }
             <a href="/Auth/Logout" class="bp-logout">Cerrar sesión</a>
         </div>
     </header>

@@ -43,7 +43,7 @@ namespace PagesObrasApp.Pages.Admin
             var dto = new CrearGastoDto
             {
                 IdObra = idObra,
-                Fecha = fecha,
+                Fecha = fecha.Date,
                 Monto = monto,
                 Descripcion = descripcion,
                 CategoriaGasto = categoriaGasto,

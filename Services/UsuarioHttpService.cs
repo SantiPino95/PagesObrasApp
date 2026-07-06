@@ -5,20 +5,24 @@ namespace PagesObrasApp.Services
     public interface IUsuarioHttpService
     {
         Task<List<UsuarioPendienteDto>?> ObtenerPendientesAsync();
+        Task<List<UsuarioPendienteDto>?> ObtenerTodosAsync();
         Task<bool> AprobarUsuarioAsync(int id, string rol, int? idEmpleado);
         Task<bool> RechazarUsuarioAsync(int id);
         Task<bool> SuspenderUsuarioAsync(int id);
         Task<bool> ReactivarUsuarioAsync(int id);
         Task<bool> CambiarRolAsync(int id, string nuevoRol);
+        Task<bool> EliminarUsuarioAsync(int id);
     }
 
     public class UsuarioHttpService : IUsuarioHttpService
     {
         private readonly IApiService _api;
         private const string Endpoint = "api/Usuario";
-
+        
         public UsuarioHttpService(IApiService api) => _api = api;
 
+        public Task<List<UsuarioPendienteDto>?> ObtenerTodosAsync()
+           => _api.GetAsync<List<UsuarioPendienteDto>>($"{Endpoint}/todos");
         public Task<List<UsuarioPendienteDto>?> ObtenerPendientesAsync()
             => _api.GetAsync<List<UsuarioPendienteDto>>($"{Endpoint}/pendientes");
 
@@ -49,6 +53,11 @@ namespace PagesObrasApp.Services
         public async Task<bool> CambiarRolAsync(int id, string nuevoRol)
         {
             var response = await _api.PutAsync($"{Endpoint}/{id}/rol", new { Rol = nuevoRol });
+            return response.IsSuccessStatusCode;
+        }
+        public async Task<bool> EliminarUsuarioAsync(int id)
+        {
+            var response = await _api.DeleteAsync($"{Endpoint}/{id}");
             return response.IsSuccessStatusCode;
         }
     }

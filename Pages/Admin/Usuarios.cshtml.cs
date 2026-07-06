@@ -18,7 +18,7 @@ namespace PagesObrasApp.Pages.Admin
             _empleadoHttpService = empleadoHttpService;
         }
 
-        public List<UsuarioPendienteDto> UsuariosPendientes { get; set; } = new();
+        public List<UsuarioPendienteDto> Usuarios { get; set; } = new();  // ✅ TODOS los usuarios
         public List<EmpleadoListadoDTOs> Empleados { get; set; } = new();
 
         [TempData] public string? Mensaje { get; set; }
@@ -26,12 +26,12 @@ namespace PagesObrasApp.Pages.Admin
 
         public async Task OnGetAsync()
         {
-            UsuariosPendientes = await _usuarioHttpService.ObtenerPendientesAsync() ?? new();
+            // ✅ Obtener TODOS los usuarios
+            Usuarios = await _usuarioHttpService.ObtenerTodosAsync() ?? new();
             Empleados = await _empleadoHttpService.ObtenerEmpleadosAsync() ?? new();
         }
 
-        public async Task<IActionResult> OnPostAprobarUsuarioAsync(
-            int id, string rol, int? idEmpleado)
+        public async Task<IActionResult> OnPostAprobarUsuarioAsync(int id, string rol, int? idEmpleado)
         {
             if (id == 0 || string.IsNullOrWhiteSpace(rol))
             {
@@ -103,6 +103,57 @@ namespace PagesObrasApp.Pages.Admin
             var cambiado = await _usuarioHttpService.CambiarRolAsync(id, rol);
             Mensaje = cambiado ? "Rol actualizado correctamente." : "No se pudo actualizar el rol.";
             MensajeTipo = cambiado ? "ok" : "error";
+            return RedirectToPage();
+        }
+
+        // ✅ NUEVO: Editar usuario
+        public async Task<IActionResult> OnPostEditarUsuarioAsync(int id, string email, string rol, int? idEmpleado)
+        {
+            if (id == 0 || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(rol))
+            {
+                Mensaje = "Todos los campos son obligatorios.";
+                MensajeTipo = "error";
+                return RedirectToPage();
+            }
+
+            var rolCambiado = await _usuarioHttpService.CambiarRolAsync(id, rol);
+            if (!rolCambiado)
+            {
+                Mensaje = "No se pudo actualizar el rol.";
+                MensajeTipo = "error";
+                return RedirectToPage();
+            }
+
+            var usuario = Usuarios.FirstOrDefault(u => u.IdUsuario == id);
+            if (usuario != null && usuario.Estado != "Pendiente")
+            {
+                var aprobado = await _usuarioHttpService.AprobarUsuarioAsync(id, rol, idEmpleado);
+                if (!aprobado)
+                {
+                    Mensaje = "No se pudo actualizar el empleado vinculado.";
+                    MensajeTipo = "error";
+                    return RedirectToPage();
+                }
+            }
+
+            Mensaje = "Usuario actualizado correctamente.";
+            MensajeTipo = "ok";
+            return RedirectToPage();
+        }
+
+        // ✅ NUEVO: Eliminar usuario
+        public async Task<IActionResult> OnPostEliminarUsuarioAsync(int id)
+        {
+            if (id == 0)
+            {
+                Mensaje = "Usuario no encontrado.";
+                MensajeTipo = "error";
+                return RedirectToPage();
+            }
+
+            var eliminado = await _usuarioHttpService.EliminarUsuarioAsync(id);
+            Mensaje = eliminado ? "Usuario eliminado correctamente." : "No se pudo eliminar el usuario.";
+            MensajeTipo = eliminado ? "ok" : "error";
             return RedirectToPage();
         }
     }
