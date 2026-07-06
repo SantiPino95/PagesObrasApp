@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PagesObrasApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+73c4f2ab29a0134a6c51ab3e05fc571595b2f785")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+49ebb950ab509436b3c8e6466478d74ad66a8b4c")]
 [assembly: System.Reflection.AssemblyProductAttribute("PagesObrasApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PagesObrasApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

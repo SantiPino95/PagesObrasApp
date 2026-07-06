@@ -18,11 +18,12 @@ namespace PagesObrasApp.Services
 
         public GastoHttpService(IApiService api) => _api = api;
 
-        public Task<List<GastoListadoDto>?> ObtenerGastosAsync()
-            => _api.GetAsync<List<GastoListadoDto>>(Endpoint);
+        public async Task<List<GastoListadoDto>?> ObtenerGastosAsync()
+        { return await _api.GetAsync<List<GastoListadoDto>>(Endpoint); }
 
-        public Task<List<GastoListadoDto>?> ObtenerGastosPorObraAsync(int idObra)
-            => _api.GetAsync<List<GastoListadoDto>>($"{Endpoint}/obra/{idObra}");
+        public async Task<List<GastoListadoDto>?> ObtenerGastosPorObraAsync(int idObra)
+
+        { return await _api.GetAsync<List<GastoListadoDto>>($"{Endpoint}/obra/{idObra}"); }
 
         public async Task<bool> CrearGastoAsync(CrearGastoDto dto)
         {

@@ -6,58 +6,113 @@
 }
 
 <div class="admin-dashboard">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h1 class="mb-0">Obras</h1>
-        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevaObra">
-            <strong>+ Nueva obra</strong>
-        </button>
-    </div>
 
-    <!-- TABLA DE OBRAS -->
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Nombre</th>
-                    <th>Cliente</th>
-                    <th>Estado</th>
-                    <th>Avance</th>
-                    <th class="text-end">Gastado</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var obra in Model.Obras)
-                {
-                    var estadoCls = obra.Estado == "En Progreso" ? "primary" :
-                                    obra.Estado == "Planificada" ? "secondary" :
-                                    obra.Estado == "Finalizada" ? "success" :
-                                    obra.Estado == "Pausada" ? "warning" : "secondary";
+    <!-- HERO / Resumen de obras -->
+    <section class="bp-hero">
+        <div class="bp-hero-grid"></div>
+        <div class="bp-hero-content">
+            <div>
+                <span class="bp-eyebrow">Gestión de obras</span>
+                <h1 class="bp-title">Obras</h1>
+                <p class="bp-date">@Model.TotalObras obra(s) registrada(s)</p>
+            </div>
+            <div class="bp-stats">
+                <div class="bp-stat">
+                    <span class="bp-stat-num">@Model.ObrasEnProgreso</span>
+                    <span class="bp-stat-label">En progreso</span>
+                </div>
+                <div class="bp-stat">
+                    <span class="bp-stat-num">@Model.ObrasPlanificadas</span>
+                    <span class="bp-stat-label">Planificadas</span>
+                </div>
+                <div class="bp-stat">
+                    <span class="bp-stat-num">@Model.ObrasFinalizadas</span>
+                    <span class="bp-stat-label">Finalizadas</span>
+                </div>
+                <div class="bp-stat bp-stat-alert">
+                    <span class="bp-stat-num">$@Model.TotalGastadoGeneral.ToString("N0")</span>
+                    <span class="bp-stat-label">Gastado total</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrEmpty(Model.Mensaje))
+    {
+        var alertCls = Model.MensajeTipo == "ok" ? "success" : "danger";
+        <div class="alert alert-@alertCls alert-dismissible fade show" role="alert">
+            @Model.Mensaje
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- LISTADO DE OBRAS -->
+    <section class="bp-section">
+        <div class="d-flex justify-content-between align-items-end">
+            <span class="bp-eyebrow">Listado</span>
+            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevaObra">
+                <strong>+ Nueva obra</strong>
+            </button>
+        </div>
+
+        <div class="bp-table-wrap mt-2">
+            <table class="bp-table">
+                <thead>
                     <tr>
-                        <td><span class="font-monospace">@obra.CodigoFormateado</span></td>
-                        <td><strong>@obra.NombreObra</strong></td>
-                        <td>@obra.NombreCliente</td>
-                        <td><span class="badge bg-@estadoCls">@obra.Estado</span></td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="progress flex-grow-1" style="height: 8px; max-width: 120px;">
-                                    <div class="progress-bar" style="width: @obra.PorcentajeAvanceActual%;"></div>
-                                </div>
-                                <span class="small fw-bold">@obra.PorcentajeAvanceActual%</span>
-                            </div>
-                        </td>
-                        <td class="text-end fw-bold">$@obra.TotalGastado.ToString("N0")</td>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                        <th>Avance</th>
+                        <th style="text-align:right;">Gastado</th>
+                        <th style="text-align:center;">Acciones</th>
                     </tr>
-                }
-                @if (!Model.Obras.Any())
-                {
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">No hay obras registradas</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @if (Model.Obras.Any())
+                    {
+                        @foreach (var obra in Model.Obras)
+                        {
+                            var estadoCls = (obra.Estado ?? "").Replace(" ", "").ToLower();
+                            <tr>
+                                <td class="bp-mono">@obra.CodigoFormateado</td>
+                                <td class="bp-strong">@obra.NombreObra</td>
+                                <td>@obra.NombreCliente</td>
+                                <td><span class="bp-badge bp-badge-@estadoCls">@obra.Estado</span></td>
+                                <td>
+                                    <div class="bp-progress">
+                                        <div class="bp-progress-fill" style="width:@obra.PorcentajeAvanceActual%"></div>
+                                    </div>
+                                    <span class="bp-mono bp-progress-num">@obra.PorcentajeAvanceActual%</span>
+                                </td>
+                                <td class="bp-mono" style="text-align:right;">$@obra.TotalGastado.ToString("N0")</td>
+                                <td style="text-align:center;">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger btn-eliminar-obra"
+                                            data-id="@obra.IdObra"
+                                            data-nombre="@obra.NombreObra"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEliminarObra"
+                                            title="Eliminar obra">
+                                        🗑
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" style="text-align:center;padding:2rem;color:var(--bp-steel);">
+                                No hay obras registradas
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
 </div>
 
 <!-- MODAL: Nueva Obra -->
@@ -107,3 +162,249 @@
         </div>
     </div>
 </div>
+<!-- MODAL: Confirmar eliminación -->
+<div class="modal fade" id="modalEliminarObra" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger"><strong>Eliminar obra</strong></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="EliminarObra">
+                <div class="modal-body">
+                    <p>¿Estás seguro de que querés eliminar la obra <strong id="nombreObraEliminar"></strong>?</p>
+                    <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>
+                    <input type="hidden" name="idObra" id="idObraEliminar" value="" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><strong>Sí, eliminar</strong></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.btn-eliminar-obra').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('idObraEliminar').value = btn.dataset.id;
+                document.getElementById('nombreObraEliminar').textContent = btn.dataset.nombre;
+            });
+        });
+    });
+</script>
+<style>
+    .admin-dashboard {
+        --bp-blueprint: #1B3A5C;
+        --bp-blueprint-light: #2D5C8C;
+        --bp-concrete: #F1EFEA;
+        --bp-steel: #5B6670;
+        --bp-safety: #F2A900;
+        --bp-ink: #181B1F;
+        --bp-line: #D8D3C8;
+        --bp-progreso: #2D6CDF;
+        --bp-pausada: #F2A900;
+        --bp-finalizada: #2E7D52;
+        --bp-cancelada: #B23A2E;
+        --bp-planificada: #5B6670;
+        font-family: 'Inter', sans-serif;
+        color: var(--bp-ink);
+    }
+
+        .admin-dashboard .bp-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+        }
+
+    .bp-hero {
+        position: relative;
+        background: var(--bp-blueprint);
+        color: #fff;
+        border-radius: 10px;
+        padding: 2rem 2rem;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .bp-hero-grid {
+        position: absolute;
+        inset: 0;
+        background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 32px), repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 32px);
+        pointer-events: none;
+    }
+
+    .bp-hero-content {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 1.5rem;
+    }
+
+    .bp-hero .bp-eyebrow {
+        color: rgba(255,255,255,0.65);
+    }
+
+    .bp-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 600;
+        font-size: 2.2rem;
+        margin: 0.2rem 0 0.1rem;
+        letter-spacing: 0.01em;
+        color: #fff;
+    }
+
+    .bp-date {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.6);
+        margin: 0;
+    }
+
+    .bp-stats {
+        display: flex;
+        gap: 1.75rem;
+        flex-wrap: wrap;
+    }
+
+    .bp-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .bp-stat-num {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.8rem;
+        font-weight: 500;
+        line-height: 1;
+        color: #fff;
+    }
+
+    .bp-stat-alert .bp-stat-num {
+        color: var(--bp-safety);
+    }
+
+    .bp-stat-label {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.6);
+        max-width: 120px;
+        text-align: right;
+    }
+
+    .bp-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .bp-table-wrap {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .bp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+
+        .bp-table thead th {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background: var(--bp-concrete);
+            border-bottom: 1px solid var(--bp-line);
+        }
+
+        .bp-table tbody td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--bp-line);
+            vertical-align: middle;
+        }
+
+        .bp-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+    .bp-mono {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.82rem;
+        color: var(--bp-steel);
+    }
+
+    .bp-strong {
+        font-weight: 600;
+    }
+
+    .bp-badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 0.2rem 0.6rem;
+        border-radius: 100px;
+        color: #fff;
+    }
+
+    .bp-badge-enprogreso {
+        background: var(--bp-progreso);
+    }
+
+    .bp-badge-pausada {
+        background: var(--bp-pausada);
+        color: var(--bp-ink);
+    }
+
+    .bp-badge-finalizada {
+        background: var(--bp-finalizada);
+    }
+
+    .bp-badge-cancelada {
+        background: var(--bp-cancelada);
+    }
+
+    .bp-badge-planificada {
+        background: var(--bp-planificada);
+    }
+
+    .bp-progress {
+        display: inline-block;
+        width: 90px;
+        height: 6px;
+        background: var(--bp-concrete);
+        border-radius: 4px;
+        overflow: hidden;
+        vertical-align: middle;
+        margin-right: 0.4rem;
+    }
+
+    .bp-progress-fill {
+        height: 100%;
+        background: var(--bp-blueprint-light);
+    }
+
+    .bp-progress-num {
+        vertical-align: middle;
+    }
+
+    @@media (max-width: 576px) {
+        .bp-hero-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .bp-stats {
+            gap: 1.1rem;
+        }
+    }
+</style>

@@ -3,47 +3,98 @@
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Clientes";
+
+    var totalClientes = Model.Clientes.Count;
+    var clientesConObras = Model.Clientes.Count(c => c.Obras.Count > 0);
+    var totalObrasAsociadas = Model.Clientes.Sum(c => c.Obras.Count);
 }
 
 <div class="admin-dashboard">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>Clientes</h1>
-        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
-            + Nuevo cliente
-        </button>
-    </div>
 
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Teléfono</th>
-                    <th>Email</th>
-                    <th>Dirección</th>
-                    <th>Obras</th>
-                    <th class="text-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var c in Model.Clientes)
-                {
+    <!-- HERO -->
+    <section class="bp-hero">
+        <div class="bp-hero-grid"></div>
+        <div class="bp-hero-content">
+            <div>
+                <span class="bp-eyebrow">Gestión de clientes</span>
+                <h1 class="bp-title">Clientes</h1>
+                <p class="bp-date">@totalClientes cliente(s) registrado(s)</p>
+            </div>
+            <div class="bp-stats">
+                <div class="bp-stat">
+                    <span class="bp-stat-num">@clientesConObras</span>
+                    <span class="bp-stat-label">Con obras activas</span>
+                </div>
+                <div class="bp-stat">
+                    <span class="bp-stat-num">@totalObrasAsociadas</span>
+                    <span class="bp-stat-label">Obras asociadas</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrEmpty(Model.Mensaje))
+    {
+        var alertCls = Model.MensajeTipo == "ok" ? "success" : "danger";
+        <div class="alert alert-@alertCls alert-dismissible fade show" role="alert">
+            @Model.Mensaje
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- LISTADO -->
+    <section class="bp-section">
+        <div class="d-flex justify-content-between align-items-end">
+            <span class="bp-eyebrow">Listado</span>
+            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
+                <strong>+ Nuevo cliente</strong>
+            </button>
+        </div>
+
+        <div class="bp-table-wrap mt-2">
+            <table class="bp-table">
+                <thead>
                     <tr>
-                        <td><strong>@c.Nombre</strong></td>
-                        <td>@c.Telefono</td>
-                        <td>@c.Email</td>
-                        <td>@c.Direccion</td>
-                        <td>@c.Obras.Count</td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary" onclick="abrirEditar(@c.IdCliente, '@c.Nombre', '@c.Telefono', '@c.Email', '@c.Direccion')">
-                                Editar
-                            </button>
-                        </td>
+                        <th>Nombre</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Dirección</th>
+                        <th>Obras</th>
+                        <th style="text-align:center;">Acciones</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @if (Model.Clientes.Any())
+                    {
+                        @foreach (var c in Model.Clientes)
+                        {
+                            <tr>
+                                <td class="bp-strong">@c.Nombre</td>
+                                <td class="bp-mono">@c.Telefono</td>
+                                <td>@c.Email</td>
+                                <td>@c.Direccion</td>
+                                <td><span class="bp-badge bp-badge-planificada">@c.Obras.Count</span></td>
+                                <td style="text-align:center;">
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                            onclick="abrirEditar(@c.IdCliente, '@c.Nombre', '@c.Telefono', '@c.Email', '@c.Direccion')">
+                                        Editar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align:center;padding:2rem;color:var(--bp-steel);">
+                                No hay clientes registrados
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
 
 <!-- MODAL: Nuevo Cliente -->
@@ -51,33 +102,33 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header" style="background:#1B3A5C;color:white">
-                <h5 class="modal-title">Nuevo Cliente</h5>
+                <h5 class="modal-title"><strong>Nuevo Cliente</strong></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" asp-page-handler="CrearCliente">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Nombre</label>
+                        <label class="form-label fw-bold">Nombre</label>
                         <input type="text" name="nombre" class="form-control" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Teléfono</label>
+                            <label class="form-label fw-bold">Teléfono</label>
                             <input type="text" name="telefono" class="form-control">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Email</label>
+                            <label class="form-label fw-bold">Email</label>
                             <input type="email" name="email" class="form-control" required>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Dirección</label>
+                        <label class="form-label fw-bold">Dirección</label>
                         <input type="text" name="direccion" class="form-control" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning">Guardar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning"><strong>Guardar</strong></button>
                 </div>
             </form>
         </div>
@@ -89,34 +140,34 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header" style="background:#1B3A5C;color:white">
-                <h5 class="modal-title">Editar Cliente</h5>
+                <h5 class="modal-title"><strong>Editar Cliente</strong></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" asp-page-handler="EditarCliente">
                 <input type="hidden" name="id" id="editId">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Nombre</label>
+                        <label class="form-label fw-bold">Nombre</label>
                         <input type="text" name="nombre" id="editNombre" class="form-control" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Teléfono</label>
+                            <label class="form-label fw-bold">Teléfono</label>
                             <input type="text" name="telefono" id="editTelefono" class="form-control">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Email</label>
+                            <label class="form-label fw-bold">Email</label>
                             <input type="email" name="email" id="editEmail" class="form-control" required>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Dirección</label>
+                        <label class="form-label fw-bold">Dirección</label>
                         <input type="text" name="direccion" id="editDireccion" class="form-control" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning">Guardar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning"><strong>Guardar</strong></button>
                 </div>
             </form>
         </div>
@@ -133,3 +184,197 @@
         new bootstrap.Modal(document.getElementById('modalEditarCliente')).show();
     }
 </script>
+
+<style>
+    .admin-dashboard {
+        --bp-blueprint: #1B3A5C;
+        --bp-blueprint-light: #2D5C8C;
+        --bp-concrete: #F1EFEA;
+        --bp-steel: #5B6670;
+        --bp-safety: #F2A900;
+        --bp-ink: #181B1F;
+        --bp-line: #D8D3C8;
+        --bp-progreso: #2D6CDF;
+        --bp-pausada: #F2A900;
+        --bp-finalizada: #2E7D52;
+        --bp-cancelada: #B23A2E;
+        --bp-planificada: #5B6670;
+        font-family: 'Inter', sans-serif;
+        color: var(--bp-ink);
+    }
+
+        .admin-dashboard .bp-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+        }
+
+    .bp-hero {
+        position: relative;
+        background: var(--bp-blueprint);
+        color: #fff;
+        border-radius: 10px;
+        padding: 2rem 2rem;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .bp-hero-grid {
+        position: absolute;
+        inset: 0;
+        background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 32px), repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 32px);
+        pointer-events: none;
+    }
+
+    .bp-hero-content {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 1.5rem;
+    }
+
+    .bp-hero .bp-eyebrow {
+        color: rgba(255,255,255,0.65);
+    }
+
+    .bp-title {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 600;
+        font-size: 2.2rem;
+        margin: 0.2rem 0 0.1rem;
+        letter-spacing: 0.01em;
+        color: #fff;
+    }
+
+    .bp-date {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.6);
+        margin: 0;
+    }
+
+    .bp-stats {
+        display: flex;
+        gap: 1.75rem;
+        flex-wrap: wrap;
+    }
+
+    .bp-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .bp-stat-num {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.8rem;
+        font-weight: 500;
+        line-height: 1;
+        color: #fff;
+    }
+
+    .bp-stat-alert .bp-stat-num {
+        color: var(--bp-safety);
+    }
+
+    .bp-stat-label {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.6);
+        max-width: 120px;
+        text-align: right;
+    }
+
+    .bp-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .bp-table-wrap {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .bp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+
+        .bp-table thead th {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--bp-steel);
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background: var(--bp-concrete);
+            border-bottom: 1px solid var(--bp-line);
+        }
+
+        .bp-table tbody td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--bp-line);
+            vertical-align: middle;
+        }
+
+        .bp-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+    .bp-mono {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.82rem;
+        color: var(--bp-steel);
+    }
+
+    .bp-strong {
+        font-weight: 600;
+    }
+
+    .bp-badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 0.2rem 0.6rem;
+        border-radius: 100px;
+        color: #fff;
+    }
+
+    .bp-badge-enprogreso {
+        background: var(--bp-progreso);
+    }
+
+    .bp-badge-pausada {
+        background: var(--bp-pausada);
+        color: var(--bp-ink);
+    }
+
+    .bp-badge-finalizada {
+        background: var(--bp-finalizada);
+    }
+
+    .bp-badge-cancelada {
+        background: var(--bp-cancelada);
+    }
+
+    .bp-badge-planificada {
+        background: var(--bp-planificada);
+    }
+
+    @@media (max-width: 576px) {
+        .bp-hero-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .bp-stats {
+            gap: 1.1rem;
+        }
+    }
+</style>

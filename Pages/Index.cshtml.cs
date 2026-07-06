@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using MiWebApi.DTOs;
 using PagesObrasApp.Models;
-using PagesObrasApp.Models.DTOs;
 using PagesObrasApp.Services;
 using System.Net;
 using System.Security.Claims;
@@ -14,10 +13,12 @@ namespace PagesObrasApp.Pages
     public class IndexModel : PageModel
     {
         private readonly IAuthHttpService _authHttpService;
+        private readonly IObraHttpService _obraHttpService;
 
-        public IndexModel(IAuthHttpService authHttpService)
+        public IndexModel(IAuthHttpService authHttpService, IObraHttpService obraHttpService)
         {
             _authHttpService = authHttpService;
+            _obraHttpService = obraHttpService;
         }
 
         // AJUSTAR: id del rol por defecto para auto-registro en tu tabla Roles.
@@ -39,7 +40,7 @@ namespace PagesObrasApp.Pages
             }
         }
 
-        public IActionResult OnPostBuscarObra(string codigoObra)
+        public async Task<IActionResult> OnPostBuscarObraAsync(string codigoObra)
         {
             ActiveTab = "cliente";
 
@@ -50,13 +51,13 @@ namespace PagesObrasApp.Pages
             }
 
             var codigo = codigoObra.Trim().ToUpper();
-            var codigosValidos = new[]
-            {
-                "OB-2026-014", "OB-2026-002", "OB-2026-011",
-                "OB-2026-019", "OB-2025-087",
-            };
 
-            if (!codigosValidos.Contains(codigo))
+            // No hay endpoint de búsqueda pública por código — se trae el listado
+            // completo y se valida acá contra CodigoFormateado.
+            var obras = await _obraHttpService.ObtenerObrasAsync() ?? new();
+            var existe = obras.Any(o => string.Equals(o.CodigoFormateado?.Trim(), codigo, StringComparison.OrdinalIgnoreCase));
+
+            if (!existe)
             {
                 ErrorMessage = $"No encontramos ninguna obra con el código \"{codigoObra.ToUpper()}\".";
                 return Page();
@@ -95,6 +96,8 @@ namespace PagesObrasApp.Pages
                 return Page();
             }
 
+            Console.WriteLine($"🔑 Login OK. Rol recibido: '{usuario.Rol}' | Nombre: '{usuario.NombreCompleto}' | IdUsuario: {usuario.IdUsuario}");
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString()),
@@ -123,13 +126,13 @@ namespace PagesObrasApp.Pages
             };
         }
 
+        // ── POST: Registro — vía AuthHttpService, con todos los campos que exige la API ──
         public async Task<IActionResult> OnPostRegistroAsync(
-    string email,
-    string password,
-    string confirmPassword)
+            string email, string password, string confirmPassword,
+            string nombre, string apellido, string cedula,
+            string? telefono, string categoria)
         {
-            // 🔍 LOG PARA VERIFICAR QUE LLEGA
-            Console.WriteLine($"📝 OnPostRegistroAsync llamado con: Email={email}, Password={password}, Confirm={confirmPassword}");
+            Console.WriteLine($"📝 OnPostRegistroAsync llamado con: Email={email}, Nombre={nombre}, Apellido={apellido}");
 
             ActiveTab = "registro";
 
@@ -139,18 +142,23 @@ namespace PagesObrasApp.Pages
                 Console.WriteLine("❌ Error: Email vacío");
                 return Page();
             }
-
             if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
             {
                 ErrorMessage = "La contraseña debe tener al menos 8 caracteres.";
                 Console.WriteLine($"❌ Error: Password inválida (length={password?.Length ?? 0})");
                 return Page();
             }
-
             if (password != confirmPassword)
             {
                 ErrorMessage = "Las contraseñas no coinciden.";
                 Console.WriteLine("❌ Error: Las contraseñas no coinciden");
+                return Page();
+            }
+            if (string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(apellido) ||
+                string.IsNullOrWhiteSpace(cedula) || string.IsNullOrWhiteSpace(categoria))
+            {
+                ErrorMessage = "Nombre, apellido, cédula y categoría son obligatorios.";
+                Console.WriteLine("❌ Error: faltan campos obligatorios de empleado");
                 return Page();
             }
 

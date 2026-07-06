@@ -56,5 +56,15 @@
         public List<EmpleadoListadoDTOs> EmpleadosAsignados { get; set; } = new();
     }
 
+    public class ActualizarObraDto
+    {
+        public int IdCliente { get; set; }
+        public string NombreObra { get; set; } = null!;
+        public string Direccion { get; set; } = null!;
+        public DateTime FechaInicio { get; set; }
+        public DateTime? FechaFinPrevista { get; set; }
 
+        // Agregamos el porcentaje aquí para que viaje desde la vista hasta la API
+        public int PorcentajeAvanceActual { get; set; }
+    }
 }

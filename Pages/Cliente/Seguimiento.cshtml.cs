@@ -1,24 +1,39 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PagesObrasApp.Models;
+using PagesObrasApp.Models.DTOs;
+using PagesObrasApp.Services;
 
 namespace PagesObrasApp.Pages.Cliente
 {
     public class SeguimientoModel : PageModel
     {
+        private readonly IObraHttpService _obraHttpService;
+        private readonly ISeguimientoHttpService _seguimientoHttpService;
+        private readonly IPresupuestoHttpService _presupuestoHttpService;
+
+        public SeguimientoModel(
+            IObraHttpService obraHttpService,
+            ISeguimientoHttpService seguimientoHttpService,
+            IPresupuestoHttpService presupuestoHttpService)
+        {
+            _obraHttpService = obraHttpService;
+            _seguimientoHttpService = seguimientoHttpService;
+            _presupuestoHttpService = presupuestoHttpService;
+        }
+
         // ── Propiedades que lee la vista ──────────────────────────────────
-
-        // Código de la obra validado (la vista lo puede usar para mostrarlo)
         public string Codigo { get; set; } = string.Empty;
-
-        // Si algo falla se usa en la vista para mostrar el error
         public string? ErrorMessage { get; set; }
 
+        public ObraAdminListadoDto Obra { get; set; } = null!;
+        public List<SeguimientoListadoDto> Seguimientos { get; set; } = new();
+        public List<PresupuestoListadoDto> PresupuestosAprobados { get; set; } = new();
 
         // ── GET ───────────────────────────────────────────────────────────
 
-        public IActionResult OnGet(string? codigo)
+        public async Task<IActionResult> OnGetAsync(string? codigo)
         {
-            // 1. Si no viene código en la URL → volver al inicio
             if (string.IsNullOrWhiteSpace(codigo))
             {
                 return RedirectToPage("/Index");
@@ -26,33 +41,28 @@ namespace PagesObrasApp.Pages.Cliente
 
             var codigoNorm = codigo.Trim().ToUpper();
 
-            // 2. TODO: reemplazar por llamada al HttpClient hacia la API
-            //    GET /api/obras/publico/{codigoNorm}
-            //    Si la API devuelve 404 → obra no encontrada
-            //    Si devuelve 200 → cargar el DTO en propiedades del modelo
-            var codigosValidos = new[]
-            {
-                "OB-2026-014",
-                "OB-2026-002",
-                "OB-2026-011",
-                "OB-2026-019",
-                "OB-2025-087",
-            };
+            // No hay endpoint de búsqueda pública por código — se trae el listado
+            // completo y se filtra acá por CodigoFormateado.
+            var obras = await _obraHttpService.ObtenerObrasAsync() ?? new();
+            var obraEncontrada = obras.FirstOrDefault(o =>
+                string.Equals(o.CodigoFormateado?.Trim(), codigoNorm, StringComparison.OrdinalIgnoreCase));
 
-            if (!codigosValidos.Contains(codigoNorm))
+            if (obraEncontrada == null)
             {
-                // Código inválido → volver al index con el error en la URL
-                // para que el tab de cliente lo muestre
                 return RedirectToPage("/Index", new { errorCodigo = codigoNorm });
             }
 
-            // 3. Código válido → guardar en la propiedad para que la vista lo use
             Codigo = codigoNorm;
+            Obra = obraEncontrada;
 
-            // TODO: acá se cargarán las propiedades de la obra desde el DTO:
-            // Obra = await _obraService.GetPorCodigoPublico(codigoNorm);
-            // Seguimientos = await _seguimientoService.GetPorObra(Obra.Id);
-            // Presupuestos = await _presupuestoService.GetAprobadosPorObra(Obra.Id);
+            Seguimientos = await _seguimientoHttpService.ObtenerPorObraAsync(Obra.IdObra) ?? new();
+            Seguimientos = Seguimientos.OrderByDescending(s => s.Fecha).ToList();
+
+            var presupuestos = await _presupuestoHttpService.ObtenerPresupuestosAsync() ?? new();
+            PresupuestosAprobados = presupuestos
+                .Where(p => p.IdObra == Obra.IdObra && p.EstadoPresupuesto == "Aprobado")
+                .OrderByDescending(p => p.FechaEmision)
+                .ToList();
 
             return Page();
         }
