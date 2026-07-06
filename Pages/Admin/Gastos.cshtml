@@ -1,0 +1,105 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.GastosModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Gastos de Obra";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Gastos de Obra</h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevoGasto">
+            + Registrar gasto
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Obra</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th class="text-end">Monto</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var g in Model.Gastos.OrderByDescending(x => x.Fecha))
+                {
+                    var obra = Model.Obras.FirstOrDefault(o => o.IdObra == g.IdObra);
+                    <tr>
+                        <td>@g.Fecha.ToString("dd/MM/yyyy")</td>
+                        <td>@obra?.NombreObra</td>
+                        <td>@g.Descripcion</td>
+                        <td><span class="badge bg-secondary">@g.CategoriaGasto</span></td>
+                        <td class="text-end fw-bold">$@g.Monto.ToString("N0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: Nuevo Gasto -->
+<div class="modal fade" id="modalNuevoGasto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title">Registrar Gasto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearGasto">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Obra</label>
+                        <select name="idObra" class="form-select" required>
+                            <option value="">Seleccionar obra...</option>
+                            @foreach (var o in Model.Obras)
+                            {
+                                <option value="@o.IdObra">@o.NombreObra</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" name="fecha" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Categoría</label>
+                            <select name="categoriaGasto" class="form-select" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Materiales">Materiales</option>
+                                <option value="Mano de Obra">Mano de Obra</option>
+                                <option value="Herramientas">Herramientas</option>
+                                <option value="Transporte">Transporte</option>
+                                <option value="Alquiler Equipos">Alquiler Equipos</option>
+                                <option value="Servicios">Servicios</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <input type="text" name="descripcion" class="form-control" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Monto ($)</label>
+                            <input type="number" name="monto" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nº Comprobante</label>
+                            <input type="text" name="nroComprobante" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

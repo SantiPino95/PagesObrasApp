@@ -1,0 +1,152 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.OrdenesCompraModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Órdenes de Compra";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>
+            Órdenes de Compra
+            @if (Model.Ordenes.Count(o => o.EstadoEntrega == "Pendiente" || o.EstadoEntrega == "Parcial") > 0)
+            {
+                <span class="badge bg-warning ms-2">@Model.Ordenes.Count(o => o.EstadoEntrega == "Pendiente" || o.EstadoEntrega == "Parcial") pendientes</span>
+            }
+        </h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevaOrden">
+            + Nueva orden
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Proveedor</th>
+                    <th>Fecha</th>
+                    <th>Ítems</th>
+                    <th class="text-end">Total</th>
+                    <th>Estado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model.Ordenes.OrderByDescending(x => x.FechaPedido))
+                {
+                    var puedeConfirmar = o.EstadoEntrega == "Pendiente" || o.EstadoEntrega == "Parcial";
+                    <tr>
+                        <td><span class="font-monospace">OC-@o.IdOrden.ToString("D4")</span></td>
+                        <td>@o.NombreProveedor</td>
+                        <td>@o.FechaPedido.ToString("dd/MM/yyyy")</td>
+                        <td>@o.Detalles.Count</td>
+                        <td class="text-end fw-bold">$@o.MontoTotal.ToString("N0")</td>
+                        <td>
+                            <span class="badge @(o.EstadoEntrega == "Pendiente" ? "bg-warning" : o.EstadoEntrega == "Entregado" ? "bg-success" : "bg-secondary")">
+                                @o.EstadoEntrega
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            @if (puedeConfirmar)
+                            {
+                                <form method="post" asp-page-handler="ConfirmarEntrega" style="display:inline">
+                                    <input type="hidden" name="id" value="@o.IdOrden">
+                                    <button type="submit" class="btn btn-sm btn-success">📦 Confirmar entrega</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: Nueva Orden -->
+<div class="modal fade" id="modalNuevaOrden" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title">Nueva Orden de Compra</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearOrden">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Proveedor</label>
+                            <select name="idProveedor" class="form-select" required>
+                                <option value="">Seleccionar...</option>
+                                @foreach (var p in Model.Proveedores)
+                                {
+                                    <option value="@p.IdProveedor">@p.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha de pedido</label>
+                            <input type="date" name="fechaPedido" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Materiales</label>
+                        <div id="ordenItemsContainer">
+                            <div class="row g-2 orden-item-row">
+                                <div class="col-5">
+                                    <select name="idMateriales" class="form-select" required>
+                                        <option value="">Seleccionar...</option>
+                                        @foreach (var m in Model.Materiales)
+                                        {
+                                            <option value="@m.IdMaterial">@m.Nombre (@m.UnidadMedida)</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <input type="number" name="cantidades" class="form-control" placeholder="Cant." step="0.01" required>
+                                </div>
+                                <div class="col-3">
+                                    <input type="number" name="precios" class="form-control" placeholder="Precio unit." step="0.01" required>
+                                </div>
+                                <div class="col-1">
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarOrdenItem(this)">×</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="agregarOrdenItem()">+ Agregar material</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function agregarOrdenItem() {
+        const container = document.getElementById('ordenItemsContainer');
+        const row = document.createElement('div');
+        row.className = 'row g-2 orden-item-row mt-2';
+        row.innerHTML = `
+            <div class="col-5"><select name="idMateriales" class="form-select" required><option value="">Seleccionar...</option>@foreach (var m in Model.Materiales){
+            <option value="@m.IdMaterial">@m.Nombre (@m.UnidadMedida)</option>
+        }
+</select></div>
+        <div class="col-3"><input type="number" name="cantidades" class="form-control" placeholder="Cant." step="0.01" required></div>
+        <div class="col-3"><input type="number" name="precios" class="form-control" placeholder="Precio unit." step="0.01" required></div>
+        <div class="col-1"><button type="button" class="btn btn-danger btn-sm" onclick="eliminarOrdenItem(this)">×</button></div>
+    `;
+    container.appendChild(row);
+}
+
+function eliminarOrdenItem(btn) {
+    const row = btn.closest('.orden-item-row');
+    if (document.querySelectorAll('.orden-item-row').length > 1) {
+        row.remove();
+    }
+}
+</script>

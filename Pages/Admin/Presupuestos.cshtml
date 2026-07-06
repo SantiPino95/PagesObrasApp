@@ -1,0 +1,143 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.PresupuestosModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Presupuestos";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>
+            Presupuestos
+            @if (Model.Presupuestos.Count(p => p.EstadoPresupuesto == "Pendiente") > 0)
+            {
+                <span class="badge bg-warning ms-2">@Model.Presupuestos.Count(p => p.EstadoPresupuesto == "Pendiente") pendientes</span>
+            }
+        </h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevoPresupuesto">
+            + Nuevo presupuesto
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Obra</th>
+                    <th>Fecha</th>
+                    <th>Ítems</th>
+                    <th class="text-end">Total</th>
+                    <th>Estado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.Presupuestos.OrderByDescending(x => x.FechaEmision))
+                {
+                    var obra = Model.Obras.FirstOrDefault(o => o.IdObra == p.IdObra);
+                    <tr>
+                        <td><span class="font-monospace">PRES-@p.IdPresupuesto.ToString("D4")</span></td>
+                        <td>@obra?.NombreObra</td>
+                        <td>@p.FechaEmision.ToString("dd/MM/yyyy")</td>
+                        <td>@p.CantidadItems</td>
+                        <td class="text-end fw-bold">$@p.MontoTotal.ToString("N0")</td>
+                        <td>
+                            <span class="badge @(p.EstadoPresupuesto == "Pendiente" ? "bg-warning" : p.EstadoPresupuesto == "Aprobado" ? "bg-success" : "bg-danger")">
+                                @p.EstadoPresupuesto
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            @if (p.EstadoPresupuesto == "Pendiente")
+                            {
+                                <form method="post" asp-page-handler="CambiarEstado" style="display:inline">
+                                    <input type="hidden" name="id" value="@p.IdPresupuesto">
+                                    <input type="hidden" name="accion" value="Aprobar">
+                                    <button type="submit" class="btn btn-sm btn-success">✓</button>
+                                </form>
+                                <form method="post" asp-page-handler="CambiarEstado" style="display:inline">
+                                    <input type="hidden" name="id" value="@p.IdPresupuesto">
+                                    <input type="hidden" name="accion" value="Rechazar">
+                                    <button type="submit" class="btn btn-sm btn-danger">✗</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: Nuevo Presupuesto -->
+<div class="modal fade" id="modalNuevoPresupuesto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title">Nuevo Presupuesto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearPresupuesto">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Obra</label>
+                        <select name="idObra" class="form-select" required>
+                            <option value="">Seleccionar obra...</option>
+                            @foreach (var o in Model.Obras)
+                            {
+                                <option value="@o.IdObra">@o.NombreObra (@o.CodigoFormateado)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Ítems del presupuesto</label>
+                        <div id="itemsContainer">
+                            <div class="row g-2 item-row">
+                                <div class="col-6">
+                                    <input type="text" name="descripciones" class="form-control" placeholder="Descripción" required>
+                                </div>
+                                <div class="col-2">
+                                    <input type="number" name="cantidades" class="form-control" placeholder="Cant." step="0.01" required>
+                                </div>
+                                <div class="col-3">
+                                    <input type="number" name="preciosUnitarios" class="form-control" placeholder="Precio" step="0.01" required>
+                                </div>
+                                <div class="col-1">
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarItem(this)">×</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="agregarItem()">+ Agregar ítem</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function agregarItem() {
+        const container = document.getElementById('itemsContainer');
+        const row = document.createElement('div');
+        row.className = 'row g-2 item-row mt-2';
+        row.innerHTML = `
+            <div class="col-6"><input type="text" name="descripciones" class="form-control" placeholder="Descripción" required></div>
+            <div class="col-2"><input type="number" name="cantidades" class="form-control" placeholder="Cant." step="0.01" required></div>
+            <div class="col-3"><input type="number" name="preciosUnitarios" class="form-control" placeholder="Precio" step="0.01" required></div>
+            <div class="col-1"><button type="button" class="btn btn-danger btn-sm" onclick="eliminarItem(this)">×</button></div>
+        `;
+        container.appendChild(row);
+    }
+
+    function eliminarItem(btn) {
+        const row = btn.closest('.item-row');
+        if (document.querySelectorAll('.item-row').length > 1) {
+            row.remove();
+        }
+    }
+</script>

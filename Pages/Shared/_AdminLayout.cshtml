@@ -1,0 +1,589 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — Constructora Admin</title>
+
+    <!-- ✅ BOOTSTRAP CSS desde CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+
+    <!-- Fuentes -->
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <style>
+            :root {
+                --bp-blueprint: #1B3A5C;
+                --bp-blueprint-light: #2D5C8C;
+                --bp-blueprint-dark: #122840;
+                --bp-concrete: #F1EFEA;
+                --bp-steel: #5B6670;
+                --bp-safety: #F2A900;
+                --bp-ink: #181B1F;
+                --bp-line: #D8D3C8;
+                --bp-sidebar-w: 240px;
+                --bp-topbar-h: 56px;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                font-family: 'Inter', sans-serif;
+                background: var(--bp-concrete);
+                color: var(--bp-ink);
+                min-height: 100vh;
+            }
+
+            /* ── TOPBAR ── */
+            .bp-topbar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: var(--bp-topbar-h);
+                background: var(--bp-blueprint-dark);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 1.25rem 0 1rem;
+                z-index: 1040;
+                border-bottom: 1px solid rgba(255,255,255,0.07);
+            }
+
+            .bp-topbar-left {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .bp-burger {
+                display: none;
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 6px;
+                border-radius: 6px;
+                color: rgba(255,255,255,.8);
+                transition: background .15s;
+            }
+
+                .bp-burger:hover {
+                    background: rgba(255,255,255,.1);
+                }
+
+                .bp-burger svg {
+                    display: block;
+                    width: 20px;
+                    height: 20px;
+                }
+
+            .bp-brand {
+                font-family: 'Barlow Condensed', sans-serif;
+                font-weight: 700;
+                font-size: 1.2rem;
+                color: #fff;
+                text-decoration: none;
+                letter-spacing: 0.02em;
+            }
+
+                .bp-brand span {
+                    color: var(--bp-safety);
+                }
+
+            .bp-topbar-right {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .bp-topbar-user {
+                font-size: 0.82rem;
+                color: rgba(255,255,255,.6);
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            .bp-logout {
+                font-size: 0.8rem;
+                font-weight: 500;
+                color: rgba(255,255,255,.7);
+                border: 1px solid rgba(255,255,255,.2);
+                border-radius: 5px;
+                padding: 0.3rem 0.75rem;
+                text-decoration: none;
+                transition: all .15s;
+            }
+
+                .bp-logout:hover {
+                    color: #fff;
+                    border-color: rgba(255,255,255,.5);
+                    background: rgba(255,255,255,.07);
+                }
+
+            /* ── SIDEBAR ── */
+            .bp-sidebar {
+                position: fixed;
+                top: var(--bp-topbar-h);
+                left: 0;
+                bottom: 0;
+                width: var(--bp-sidebar-w);
+                background: var(--bp-blueprint);
+                overflow-y: auto;
+                overflow-x: hidden;
+                z-index: 1030;
+                transition: transform .25s ease;
+                display: flex;
+                flex-direction: column;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255,255,255,.15) transparent;
+            }
+
+                .bp-sidebar::-webkit-scrollbar {
+                    width: 4px;
+                }
+
+                .bp-sidebar::-webkit-scrollbar-thumb {
+                    background: rgba(255,255,255,.15);
+                    border-radius: 4px;
+                }
+
+            .bp-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,.45);
+                z-index: 1025;
+            }
+
+                .bp-overlay.show {
+                    display: block;
+                }
+
+            .bp-nav-group {
+                padding: 1rem 0 0.25rem;
+            }
+
+            .bp-nav-group-label {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 0.62rem;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+                color: rgba(255,255,255,.35);
+                padding: 0 1.1rem 0.4rem;
+                display: block;
+            }
+
+            .bp-nav-item {
+                display: flex;
+                align-items: center;
+                gap: 0.65rem;
+                padding: 0.52rem 1.1rem;
+                color: rgba(255,255,255,.72);
+                text-decoration: none;
+                font-size: 0.875rem;
+                border-left: 3px solid transparent;
+                transition: background .15s, color .15s, border-color .15s;
+                cursor: pointer;
+            }
+
+                .bp-nav-item:hover {
+                    background: rgba(255,255,255,.07);
+                    color: #fff;
+                }
+
+                .bp-nav-item.active {
+                    background: rgba(255,255,255,.1);
+                    color: #fff;
+                    border-left-color: var(--bp-safety);
+                }
+
+                .bp-nav-item svg {
+                    width: 16px;
+                    height: 16px;
+                    flex-shrink: 0;
+                    fill: none;
+                    stroke: currentColor;
+                    stroke-width: 2;
+                    stroke-linecap: round;
+                    stroke-linejoin: round;
+                    opacity: .8;
+                }
+
+                .bp-nav-item .bp-nav-chevron {
+                    margin-left: auto;
+                    width: 13px;
+                    height: 13px;
+                    transition: transform .2s ease;
+                }
+
+                .bp-nav-item.open .bp-nav-chevron {
+                    transform: rotate(90deg);
+                }
+
+            .bp-nav-sub {
+                overflow: hidden;
+                max-height: 0;
+                transition: max-height .25s ease;
+            }
+
+                .bp-nav-sub.open {
+                    max-height: 600px;
+                }
+
+            .bp-nav-sub-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.42rem 1.1rem 0.42rem 2.6rem;
+                color: rgba(255,255,255,.6);
+                text-decoration: none;
+                font-size: 0.83rem;
+                border-left: 3px solid transparent;
+                transition: background .15s, color .15s, border-color .15s;
+            }
+
+                .bp-nav-sub-item::before {
+                    content: "";
+                    display: block;
+                    width: 4px;
+                    height: 4px;
+                    border-radius: 50%;
+                    background: rgba(255,255,255,.3);
+                    flex-shrink: 0;
+                }
+
+                .bp-nav-sub-item:hover {
+                    background: rgba(255,255,255,.06);
+                    color: #fff;
+                }
+
+                .bp-nav-sub-item.active {
+                    color: var(--bp-safety);
+                    border-left-color: var(--bp-safety);
+                }
+
+                    .bp-nav-sub-item.active::before {
+                        background: var(--bp-safety);
+                    }
+
+            .bp-nav-divider {
+                height: 1px;
+                background: rgba(255,255,255,.07);
+                margin: 0.5rem 1rem;
+            }
+
+            .bp-sidebar-footer {
+                margin-top: auto;
+                padding: 0.75rem 1rem;
+                border-top: 1px solid rgba(255,255,255,.08);
+            }
+
+            .bp-sidebar-version {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 0.65rem;
+                color: rgba(255,255,255,.25);
+                text-align: center;
+            }
+
+            /* ── CONTENIDO ── */
+            .bp-content {
+                margin-left: var(--bp-sidebar-w);
+                margin-top: var(--bp-topbar-h);
+                min-height: calc(100vh - var(--bp-topbar-h));
+                padding: 1.75rem 1.5rem 2.5rem;
+                transition: margin-left .25s ease;
+            }
+
+            /* ── RESPONSIVE ── */
+            @@media (max-width: 991px) {
+                .bp-burger {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .bp-sidebar {
+                    transform: translateX(-100%);
+                }
+
+                    .bp-sidebar.open {
+                        transform: translateX(0);
+                    }
+
+                .bp-content {
+                    margin-left: 0;
+                }
+            }
+
+            @@media (max-width: 576px) {
+                .bp-content {
+                    padding: 1rem 0.85rem 2rem;
+                }
+
+                .bp-topbar-user {
+                    display: none;
+                }
+            }
+
+            /* ── MEJORAS PARA TABLAS Y MODALES ── */
+            .table-responsive {
+                background: #fff;
+                border-radius: 8px;
+                padding: 0;
+                overflow: hidden;
+                border: 1px solid var(--bp-line);
+            }
+
+            .table {
+                margin-bottom: 0;
+            }
+
+                .table thead th {
+                    background: var(--bp-concrete);
+                    border-bottom: 2px solid var(--bp-line);
+                    font-weight: 600;
+                }
+
+                .table tbody tr:hover {
+                    background: #f8f7f5;
+                }
+
+            .modal-header {
+                border-bottom: none;
+            }
+
+            .modal-footer {
+                border-top: none;
+            }
+
+            .modal-content {
+                border: none;
+                border-radius: 12px;
+                box-shadow: 0 20px 60px rgba(0,0,0,.3);
+            }
+
+            .btn-warning {
+                background: var(--bp-safety);
+                border-color: var(--bp-safety);
+                color: var(--bp-ink);
+                font-weight: 600;
+            }
+
+                .btn-warning:hover {
+                    background: #d99500;
+                    border-color: #d99500;
+                    color: var(--bp-ink);
+                }
+
+            .badge {
+                font-weight: 500;
+            }
+
+            .bg-success {
+                background-color: #2E7D52 !important;
+            }
+
+            .bg-danger {
+                background-color: #B23A2E !important;
+            }
+
+            .bg-warning {
+                background-color: #F2A900 !important;
+                color: #181B1F;
+            }
+
+            .bg-info {
+                background-color: #2D6CDF !important;
+            }
+    </style>
+</head>
+<body>
+
+    <!-- TOPBAR -->
+    <header class="bp-topbar">
+        <div class="bp-topbar-left">
+            <button class="bp-burger" id="bpBurger" aria-label="Abrir menú">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+            </button>
+            <a href="/Admin" class="bp-brand">Constructora <span>·</span> Admin</a>
+        </div>
+        <div class="bp-topbar-right">
+            @if (User.Identity is { IsAuthenticated: true })
+            {
+                <span class="bp-topbar-user">Hola, @User.Identity.Name</span>
+            }
+            else
+            {
+                <span class="bp-topbar-user">Invitado</span>
+            }
+            <a href="/Auth/Logout" class="bp-logout">Cerrar sesión</a>
+        </div>
+    </header>
+
+    <!-- OVERLAY MOBILE -->
+    <div class="bp-overlay" id="bpOverlay"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="bp-sidebar" id="bpSidebar">
+
+        <nav class="bp-nav-group">
+            <span class="bp-nav-group-label">Principal</span>
+            <a href="/Admin" class="bp-nav-item" data-path="/Admin">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
+                Dashboard
+            </a>
+        </nav>
+
+        <div class="bp-nav-divider"></div>
+
+        <nav class="bp-nav-group">
+            <span class="bp-nav-group-label">Proyectos</span>
+            <a href="/Admin/Obras" class="bp-nav-item" data-path="/Admin/Obras">
+                <svg viewBox="0 0 24 24"><path d="M7 21h10M7 21V5l5-2 5 2v16M10 9h4M10 13h4M10 17h4" /></svg>
+                Obras
+            </a>
+            <a href="/Admin/SeguimientoObra" class="bp-nav-item" data-path="/Admin/SeguimientoObra">
+                <svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></svg>
+                Seguimiento
+            </a>
+            <a href="/Admin/Novedades" class="bp-nav-item" data-path="/Admin/Novedades">
+                <svg viewBox="0 0 24 24"><path d="M12 3l10 18H2L12 3z" /><path d="M12 9v5M12 17h.01" /></svg>
+                Novedades
+            </a>
+        </nav>
+
+        <div class="bp-nav-divider"></div>
+
+        <nav class="bp-nav-group">
+            <span class="bp-nav-group-label">Personal</span>
+            <a href="/Admin/Empleados" class="bp-nav-item" data-path="/Admin/Empleados">
+                <svg viewBox="0 0 24 24"><circle cx="8" cy="7" r="3" /><path d="M3 20c0-3 2-5 5-5s5 2 5 5" /><circle cx="17" cy="8" r="2.3" /><path d="M14.2 20c.3-2.3 1.7-4 3.8-4s3.4 1.3 3.7 3.4" /></svg>
+                Empleados
+            </a>
+            <a href="/Admin/AsignacionEmpleados" class="bp-nav-item" data-path="/Admin/AsignacionEmpleados">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>
+                Asignación
+            </a>
+        </nav>
+
+        <div class="bp-nav-divider"></div>
+
+        <nav class="bp-nav-group">
+            <span class="bp-nav-group-label">Inventario</span>
+            <a href="/Admin/Materiales" class="bp-nav-item" data-path="/Admin/Materiales">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="5" /><rect x="13" y="4" width="8" height="5" /><rect x="3" y="11" width="8" height="5" /><rect x="13" y="11" width="8" height="5" /></svg>
+                Materiales
+            </a>
+            <a href="/Admin/Herramientas" class="bp-nav-item" data-path="/Admin/Herramientas">
+                <svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 10-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 005.4-5.4l-2.1 2.1-2-2 2.1-2.1z" /></svg>
+                Herramientas
+            </a>
+        </nav>
+
+        <div class="bp-nav-divider"></div>
+
+        <nav class="bp-nav-group">
+            <span class="bp-nav-group-label">Finanzas</span>
+            <div class="bp-nav-item" id="toggleFinanzas">
+                <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6" /></svg>
+                Finanzas
+                <svg class="bp-nav-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" /></svg>
+            </div>
+            <div class="bp-nav-sub" id="subFinanzas">
+                <a href="/Admin/Presupuestos" class="bp-nav-sub-item" data-path="/Admin/Presupuestos">Presupuestos</a>
+                <a href="/Admin/Gastos" class="bp-nav-sub-item" data-path="/Admin/Gastos">Gastos de obra</a>
+                <a href="/Admin/OrdenesCompra" class="bp-nav-sub-item" data-path="/Admin/OrdenesCompra">Órdenes de compra</a>
+                <a href="/Admin/PagosProveedor" class="bp-nav-sub-item" data-path="/Admin/PagosProveedor">Pagos a proveedor</a>
+            </div>
+        </nav>
+
+        <div class="bp-nav-divider"></div>
+
+        <nav class="bp-nav-group">
+            <span class="bp-nav-group-label">Administración</span>
+            <div class="bp-nav-item" id="toggleAdmin">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M6 20v-1a6 6 0 0112 0v1" /></svg>
+                Gestión
+                <svg class="bp-nav-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" /></svg>
+            </div>
+            <div class="bp-nav-sub" id="subAdmin">
+                <a href="/Admin/Clientes" class="bp-nav-sub-item" data-path="/Admin/Clientes">Clientes</a>
+                <a href="/Admin/Proveedores" class="bp-nav-sub-item" data-path="/Admin/Proveedores">Proveedores</a>
+                <a href="/Admin/Usuarios" class="bp-nav-sub-item" data-path="/Admin/Usuarios">Usuarios</a>
+            </div>
+        </nav>
+
+        <div class="bp-sidebar-footer">
+            <p class="bp-sidebar-version">v1.0.0 · Constructora</p>
+        </div>
+
+    </aside>
+
+    <!-- CONTENIDO -->
+    <div class="bp-content">
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- ✅ BOOTSTRAP JS desde CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        (function () {
+        // ── Burger / overlay mobile
+        const burger = document.getElementById('bpBurger');
+        const sidebar = document.getElementById('bpSidebar');
+        const overlay = document.getElementById('bpOverlay');
+
+        function toggleSidebar() {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('show');
+        }
+        burger.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
+
+        // ── Submenús desplegables
+        function initToggle(btnId, subId) {
+        const btn = document.getElementById(btnId);
+        const sub = document.getElementById(subId);
+        if (!btn || !sub) return;
+
+        btn.addEventListener('click', () => {
+        const isOpen = sub.classList.contains('open');
+        document.querySelectorAll('.bp-nav-sub.open').forEach(el => el.classList.remove('open'));
+        document.querySelectorAll('.bp-nav-item.open').forEach(el => el.classList.remove('open'));
+        if (!isOpen) {
+        sub.classList.add('open');
+        btn.classList.add('open');
+        }
+        });
+        }
+        initToggle('toggleFinanzas', 'subFinanzas');
+        initToggle('toggleAdmin', 'subAdmin');
+
+        // ── Active link
+        const currentPath = window.location.pathname.replace(/\/$/, '');
+        document.querySelectorAll('[data-path]').forEach(el => {
+        const itemPath = el.getAttribute('data-path').replace(/\/$/, '');
+        if (currentPath === itemPath || (itemPath !== '/Admin' && currentPath.startsWith(itemPath))) {
+        el.classList.add('active');
+        const sub = el.closest('.bp-nav-sub');
+        if (sub) {
+        sub.classList.add('open');
+        const toggle = sub.previousElementSibling;
+        if (toggle) toggle.classList.add('open');
+        }
+        }
+        });
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>@ViewData["Title"] — Constructora Pages y Familia</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <style>
+            :root {
+                --bp-blueprint: #1B3A5C;
+                --bp-blueprint-light: #2D5C8C;
+                --bp-blueprint-dark: #122840;
+                --bp-concrete: #F1EFEA;
+                --bp-steel: #5B6670;
+                --bp-safety: #F2A900;
+                --bp-ink: #181B1F;
+                --bp-line: #D8D3C8;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                font-family: 'Inter', sans-serif;
+                background: var(--bp-concrete);
+                color: var(--bp-ink);
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            main {
+                flex: 1;
+            }
+
+            /* ── NAVBAR ── */
+            .bp-navbar {
+                height: 56px;
+                background: var(--bp-blueprint-dark);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 2rem;
+                border-bottom: 1px solid rgba(255,255,255,.07);
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            }
+
+            .bp-navbar-brand {
+                font-family: 'Barlow Condensed', sans-serif;
+                font-weight: 700;
+                font-size: 1.1rem;
+                letter-spacing: .03em;
+                color: #fff;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                gap: .55rem;
+            }
+
+                .bp-navbar-brand svg {
+                    width: 20px;
+                    height: 20px;
+                    fill: none;
+                    stroke: var(--bp-safety);
+                    stroke-width: 1.8;
+                    stroke-linecap: round;
+                    stroke-linejoin: round;
+                }
+
+                .bp-navbar-brand span {
+                    color: var(--bp-safety);
+                }
+
+            .bp-navbar-right {
+                display: flex;
+                align-items: center;
+                gap: .5rem;
+            }
+
+            .bp-nav-user {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: .72rem;
+                color: rgba(255,255,255,.6);
+                padding: .28rem .65rem;
+                background: rgba(255,255,255,.08);
+                border-radius: 100px;
+                border: 1px solid rgba(255,255,255,.12);
+            }
+
+            .bp-nav-link {
+                font-size: .83rem;
+                font-weight: 500;
+                color: rgba(255,255,255,.72);
+                text-decoration: none;
+                padding: .32rem .75rem;
+                border-radius: 6px;
+                transition: all .15s;
+            }
+
+                .bp-nav-link:hover {
+                    color: #fff;
+                    background: rgba(255,255,255,.08);
+                }
+
+            .bp-nav-btn {
+                font-size: .83rem;
+                font-weight: 600;
+                background: var(--bp-safety);
+                color: var(--bp-ink);
+                border: none;
+                border-radius: 6px;
+                padding: .32rem .85rem;
+                cursor: pointer;
+                text-decoration: none;
+                transition: background .15s;
+            }
+
+                .bp-nav-btn:hover {
+                    background: #d99500;
+                    color: var(--bp-ink);
+                }
+
+            .bp-nav-btn--ghost {
+                background: transparent;
+                color: rgba(255,255,255,.72);
+                border: 1px solid rgba(255,255,255,.2);
+            }
+
+                .bp-nav-btn--ghost:hover {
+                    color: #fff;
+                    background: rgba(255,255,255,.08);
+                    border-color: rgba(255,255,255,.4);
+                }
+
+            /* ── BREADCRUMB (opcional, páginas lo pueden usar) ── */
+            .bp-breadcrumb {
+                background: #fff;
+                border-bottom: 1px solid var(--bp-line);
+                padding: .55rem 2rem;
+                display: flex;
+                align-items: center;
+                gap: .5rem;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: .68rem;
+                letter-spacing: .06em;
+                text-transform: uppercase;
+                color: var(--bp-steel);
+            }
+
+                .bp-breadcrumb a {
+                    color: var(--bp-blueprint);
+                    text-decoration: none;
+                }
+
+                    .bp-breadcrumb a:hover {
+                        color: var(--bp-safety);
+                    }
+
+            .bp-breadcrumb-sep {
+                color: var(--bp-line);
+            }
+
+            /* ── FOOTER ── */
+            .bp-footer {
+                background: var(--bp-blueprint-dark);
+                padding: 1.5rem 2rem;
+                border-top: 1px solid rgba(255,255,255,.07);
+            }
+
+            .bp-footer-inner {
+                max-width: 1100px;
+                margin: 0 auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .bp-footer-brand {
+                font-family: 'Barlow Condensed', sans-serif;
+                font-weight: 700;
+                font-size: 1rem;
+                color: rgba(255,255,255,.8);
+                letter-spacing: .03em;
+            }
+
+                .bp-footer-brand span {
+                    color: var(--bp-safety);
+                }
+
+            .bp-footer-right {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: .68rem;
+                color: rgba(255,255,255,.35);
+                text-align: right;
+                line-height: 1.6;
+            }
+
+            @@media (max-width: 576px) {
+                .bp-navbar {
+                    padding: 0 1rem;
+                }
+
+                .bp-nav-user {
+                    display: none;
+                }
+
+                .bp-breadcrumb {
+                    padding: .55rem 1rem;
+                }
+
+                .bp-footer {
+                    padding: 1.25rem 1rem;
+                }
+
+                .bp-footer-inner {
+                    flex-direction: column;
+                    text-align: center;
+                }
+
+                .bp-footer-right {
+                    text-align: center;
+                }
+            }
+    </style>
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+    <!-- ── NAVBAR ── -->
+    <header class="bp-navbar">
+        <a href="/" class="bp-navbar-brand">
+            <svg viewBox="0 0 24 24">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            Constructora <span>·</span> Pages y Familia
+        </a>
+
+        <div class="bp-navbar-right">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <!-- Usuario logueado: mostrar nombre y botón de salida -->
+                <span class="bp-nav-user">@User.Identity.Name</span>
+
+                @if (User.IsInRole("Administrador"))
+                {
+                    <a href="/Admin" class="bp-nav-link">Panel admin</a>
+                }
+                else if (User.IsInRole("Supervisor") || User.IsInRole("Empleado"))
+                {
+                    <a href="/Empleado" class="bp-nav-link">Mi panel</a>
+                }
+
+                <a href="/Auth/Logout" class="bp-nav-btn bp-nav-btn--ghost">Salir</a>
+            }
+            else
+            {
+                <!-- No logueado: redirigir al home que tiene el panel de tabs -->
+                <a href="/#login" class="bp-nav-link">Iniciar sesión</a>
+                <a href="/#registro" class="bp-nav-btn">Registrarse</a>
+            }
+        </div>
+    </header>
+
+    <!-- ── BREADCRUMB (las páginas lo inyectan si quieren) ── -->
+    @await RenderSectionAsync("Breadcrumb", required: false)
+
+    <!-- ── CONTENIDO ── -->
+    <main>
+        @RenderBody()
+    </main>
+
+    <!-- ── FOOTER ── -->
+    <footer class="bp-footer">
+        <div class="bp-footer-inner">
+            <div class="bp-footer-brand">
+                Constructora <span>·</span> Pages y Familia
+            </div>
+            <div class="bp-footer-right">
+                <div>📍 Av. Principal 123 &nbsp;·&nbsp; 📞 (098) 123-4567</div>
+                <div>© 2026 · Todos los derechos reservados</div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

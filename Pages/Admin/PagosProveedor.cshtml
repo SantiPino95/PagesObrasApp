@@ -1,0 +1,92 @@
+﻿@page
+@model PagesObrasApp.Pages.Admin.PagosProveedorModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Pagos a Proveedores";
+}
+
+<div class="admin-dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Pagos a Proveedores</h1>
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevoPago">
+            + Registrar pago
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Proveedor</th>
+                    <th>Fecha</th>
+                    <th>Método</th>
+                    <th class="text-end">Monto</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.Pagos.OrderByDescending(x => x.FechaPago))
+                {
+                    var prov = Model.Proveedores.FirstOrDefault(pr => pr.IdProveedor == p.IdProveedor);
+                    <tr>
+                        <td><span class="font-monospace">PAG-@p.IdPagoProveedor.ToString("D4")</span></td>
+                        <td>@prov?.Nombre</td>
+                        <td>@p.FechaPago.ToString("dd/MM/yyyy")</td>
+                        <td><span class="badge bg-secondary">@p.MetodoPago</span></td>
+                        <td class="text-end fw-bold">$@p.Monto.ToString("N0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: Nuevo Pago -->
+<div class="modal fade" id="modalNuevoPago" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1B3A5C;color:white">
+                <h5 class="modal-title">Registrar Pago</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CrearPago">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Proveedor</label>
+                        <select name="idProveedor" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            @foreach (var p in Model.Proveedores)
+                            {
+                                <option value="@p.IdProveedor">@p.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha de pago</label>
+                            <input type="date" name="fechaPago" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Método</label>
+                            <select name="metodoPago" class="form-select" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Débito">Débito</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Monto ($)</label>
+                        <input type="number" name="monto" class="form-control" step="0.01" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
