@@ -13,53 +13,140 @@
         </button>
     </div>
 
-    <!-- TABLA DE OBRAS -->
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Nombre</th>
-                    <th>Cliente</th>
-                    <th>Estado</th>
-                    <th>Avance</th>
-                    <th class="text-end">Gastado</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var obra in Model.Obras)
-                {
-                    var estadoCls = obra.Estado == "En Progreso" ? "primary" :
-                                    obra.Estado == "Planificada" ? "secondary" :
-                                    obra.Estado == "Finalizada" ? "success" :
-                                    obra.Estado == "Pausada" ? "warning" : "secondary";
+    <div class="admin-dashboard">
+        <h3 class="mt-4 mb-3 text-primary">Obras Activas</h3>
+        <div class="table-responsive mb-5" style="min-height: 200px;">
+            <table class="table table-hover align-middle">
+                <thead>
                     <tr>
-                        <td><span class="font-monospace">@obra.CodigoFormateado</span></td>
-                        <td><strong>@obra.NombreObra</strong></td>
-                        <td>@obra.NombreCliente</td>
-                        <td><span class="badge bg-@estadoCls">@obra.Estado</span></td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="progress flex-grow-1" style="height: 8px; max-width: 120px;">
-                                    <div class="progress-bar" style="width: @obra.PorcentajeAvanceActual%;"></div>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Cliente</th>
+                        <th>Fecha inicio</th>
+                        <th>Estado</th>
+                        <th>Avance</th>
+                        <th class="text-end">Gastado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var obra in Model.Obras.Where(o => o.Estado != "Finalizada" && o.Estado != "Cancelada"))
+                    {
+                        var estadoCls = obra.Estado == "En Progreso" ? "primary" :
+                                        obra.Estado == "Planificada" ? "secondary" :
+                                        obra.Estado == "Pausada" ? "warning" : "secondary";
+                        <tr>
+                            <td><span class="font-monospace">@obra.CodigoFormateado</span></td>
+                            <td><strong>@obra.NombreObra</strong></td>
+                            <td>@obra.NombreCliente</td>
+                            <td>@obra.FechaInicio.ToString("dd/MM/yyyy")</td>
+                            <td><span class="@($"badge bg-{estadoCls}")">@obra.Estado</span></td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height: 8px; max-width: 120px;">
+                                        <div class="progress-bar" style="width: @obra.PorcentajeAvanceActual%;"></div>
+                                    </div>
+                                    <span class="small fw-bold">@obra.PorcentajeAvanceActual%</span>
                                 </div>
-                                <span class="small fw-bold">@obra.PorcentajeAvanceActual%</span>
-                            </div>
-                        </td>
-                        <td class="text-end fw-bold">$@obra.TotalGastado.ToString("N0")</td>
-                    </tr>
-                }
-                @if (!Model.Obras.Any())
-                {
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">No hay obras registradas</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
+                            </td>
+                            <td class="text-end fw-bold">$@obra.TotalGastado.ToString("N0")</td>
 
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-2">
+                                    
+
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Estado
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <form method="post" asp-page-handler="CambiarEstado" asp-route-id="@obra.IdObra" asp-route-nuevoEstado="En Progreso">
+                                                    <button type="submit" class="dropdown-item">▶ Marcar En Progreso</button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <form method="post" asp-page-handler="CambiarEstado" asp-route-id="@obra.IdObra" asp-route-nuevoEstado="Pausada">
+                                                    <button type="submit" class="dropdown-item">⏸ Pausar</button>
+                                                </form>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form method="post" asp-page-handler="CambiarEstado" asp-route-id="@obra.IdObra" asp-route-nuevoEstado="Cancelada" onsubmit="return confirm('¿Seguro que deseas cancelar esta obra?');">
+                                                    <button type="submit" class="dropdown-item text-danger">❌ Cancelar Obra</button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Obras.Any(o => o.Estado != "Finalizada" && o.Estado != "Cancelada"))
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">No hay obras activas.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="mt-5 mb-3 text-success">Historial de Obras Finalizadas ✓</h3>
+        <div class="table-responsive mb-5">
+            <table class="table table-success table-striped align-middle">
+                <tbody>
+                    @foreach (var obra in Model.Obras.Where(o => o.Estado == "Finalizada"))
+                    {
+                        <tr>
+                            <td><span class="font-monospace">@obra.CodigoFormateado</span></td>
+                            <td><strong>@obra.NombreObra</strong></td>
+                            <td>@obra.NombreCliente</td>
+                            <td>@obra.FechaInicio.ToString("dd/MM/yyyy")</td>
+                            <td><span class="badge bg-success">Finalizada</span></td>
+                            <td class="text-end fw-bold">$@obra.TotalGastado.ToString("N0")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="mt-5 mb-3 text-danger">Obras Canceladas / Dadas de Baja ❌</h3>
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Cliente</th>
+                        <th>Fecha Inicio</th>
+                        <th>Estado</th>
+                        <th class="text-end">Último Gasto Registrado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var obra in Model.Obras.Where(o => o.Estado == "Cancelada"))
+                    {
+                        <tr>
+                            <td><span class="font-monospace text-muted">@obra.CodigoFormateado</span></td>
+                            <td><del>@obra.NombreObra</del></td>
+                            <td>@obra.NombreCliente</td>
+                            <td>@obra.FechaInicio.ToString("dd/MM/yyyy")</td>
+                            <td><span class="badge bg-danger">Cancelada</span></td>
+                            <td class="text-end text-muted">$@obra.TotalGastado.ToString("N0")</td>
+                        </tr>
+                    }
+                    @if (!Model.Obras.Any(o => o.Estado == "Cancelada"))
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-3">No hay obras canceladas.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 <!-- MODAL: Nueva Obra -->
 <div class="modal fade" id="modalNuevaObra" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -106,4 +193,6 @@
             </form>
         </div>
     </div>
+</div>
+
 </div>

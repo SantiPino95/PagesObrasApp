@@ -39,6 +39,7 @@ namespace PagesObrasApp.Pages.Empleado
 
         public async Task<IActionResult> OnGetAsync()
         {
+            
             var idEmpleadoClaim = User.FindFirst("IdEmpleado")?.Value;
             if (string.IsNullOrEmpty(idEmpleadoClaim) || !int.TryParse(idEmpleadoClaim, out int idEmpleado))
             {

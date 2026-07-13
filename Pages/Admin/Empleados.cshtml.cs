@@ -17,6 +17,8 @@ namespace PagesObrasApp.Pages.Admin
             _empleadoHttpService = empleadoHttpService;
             _obraHttpService = obraHttpService;
         }
+        [BindProperty]
+        public CrearEmpleadoDTOs EmpleadoNuevo { get; set; } = new();
 
         public List<EmpleadoListadoDTOs> Empleados { get; set; } = new();
         public List<ObraAdminListadoDto> Obras { get; set; } = new();
@@ -32,52 +34,74 @@ namespace PagesObrasApp.Pages.Admin
             Asignados = await _empleadoHttpService.ObtenerAsignacionesAsync() ?? new();
         }
 
-        public async Task<IActionResult> OnPostCrearEmpleadoAsync(
-            string nombre, string apellido, string categoria, string? telefono)
+        public async Task<IActionResult> OnPostCrearEmpleadoAsync()
         {
-            if (string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(apellido) || string.IsNullOrWhiteSpace(categoria))
+            if (!ModelState.IsValid)
             {
-                Mensaje = "Nombre, apellido y categoría son obligatorios.";
+              
+                // Los muestra directamente en tu cartel rojo
+                Mensaje = ("Error en campos -> " );
                 MensajeTipo = "error";
-                return RedirectToPage();
+                return Page();
             }
 
-            var dto = new CrearEmpleadoDTOs
+            try
             {
-                Nombre = nombre,
-                Apellido = apellido,
-                Categoria = categoria,
-                Telefono = telefono
-            };
+                var creado = await _empleadoHttpService.CrearEmpleadoAsync(EmpleadoNuevo);
 
-            var creado = await _empleadoHttpService.CrearEmpleadoAsync(dto);
-            Mensaje = creado ? $"Empleado \"{nombre} {apellido}\" dado de alta." : "No se pudo crear el empleado.";
-            MensajeTipo = creado ? "ok" : "error";
+                if (creado)
+                {
+                    Mensaje = $"Empleado \"{EmpleadoNuevo.Nombre} {EmpleadoNuevo.Apellido}\" dado de alta.";
+                    MensajeTipo = "ok";
+                }
+                else
+                {
+                    Mensaje = "Error: La API rechazó el registro. Verifique Cédula o Email.";
+                    MensajeTipo = "error";
+                }
+            }
+            catch (Exception ex)
+            {
+                
+                Mensaje = $"Error: {ex.Message}";
+                MensajeTipo = "error";
+            }
+
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostAsignarEmpleadoAsync(
-            int idEmpleado, int idObra, decimal valorHoraAsignado, string rolEnObra)
+        public async Task<IActionResult> OnPostEliminarEmpleadoAsync(int idEmpleado)
         {
-            if (idEmpleado == 0 || idObra == 0)
+            if (idEmpleado <= 0)
             {
-                Mensaje = "Seleccioná empleado y obra.";
+                Mensaje = "Error: ID de empleado inválido.";
                 MensajeTipo = "error";
                 return RedirectToPage();
             }
-
-            var dto = new AsignarEmpleadoObraDto
+            try
             {
-                IdEmpleado = idEmpleado,
-                IdObra = idObra,
-                RolEnObra = rolEnObra,
-                ValorHoraAsignado = valorHoraAsignado
-            };
-
-            var asignado = await _empleadoHttpService.AsignarAObraAsync(dto);
-            Mensaje = asignado ? "Empleado asignado a la obra correctamente." : "No se pudo asignar (verificá que no esté ya asignado hoy).";
-            MensajeTipo = asignado ? "ok" : "error";
+                var eliminado = await _empleadoHttpService.EliminarEmpleadoAsync(idEmpleado);
+                if (eliminado)
+                {
+                    Mensaje = $"Empleado con ID {idEmpleado} eliminado correctamente.";
+                    MensajeTipo = "ok";
+                }
+                else
+                {
+                    Mensaje = "Error: No se pudo eliminar el empleado. Puede que esté asignado a una obra.";
+                    MensajeTipo = "error";
+                }
+            }
+            catch (Exception ex)
+            {
+                Mensaje = $"Error al eliminar empleado: {ex.Message}";
+                MensajeTipo = "error";
+            }
             return RedirectToPage();
-        }
+        } 
+
+       
+
+
     }
 }

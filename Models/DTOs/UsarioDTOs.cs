@@ -12,4 +12,12 @@
         public int? IdEmpleado { get; set; }  // ID del empleado vinculado
         public DateTime FechaReg { get; set; } = DateTime.Now;  // Fecha de registro
     }
+
+    public class ActualizarUsuarioDto
+    {
+        public string Email { get; set; } = null!;
+        public string? Estado { get; set; }
+        public int? IdRol { get; set; }
+        public int? IdEmpleado { get; set; }
+    }
 }

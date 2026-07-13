@@ -11,6 +11,7 @@ namespace PagesObrasApp.Services
         Task<bool> SuspenderUsuarioAsync(int id);
         Task<bool> ReactivarUsuarioAsync(int id);
         Task<bool> CambiarRolAsync(int id, string nuevoRol);
+        Task<bool> ActualizarUsuarioAsync(int id, ActualizarUsuarioDto dto);
         Task<bool> EliminarUsuarioAsync(int id);
     }
 
@@ -23,6 +24,12 @@ namespace PagesObrasApp.Services
 
         public Task<List<UsuarioPendienteDto>?> ObtenerTodosAsync()
            => _api.GetAsync<List<UsuarioPendienteDto>>($"{Endpoint}/todos");
+
+        public async Task<bool> ActualizarUsuarioAsync(int id, ActualizarUsuarioDto dto)
+        {
+            var response = await _api.PutAsync($"{Endpoint}/{id}", dto);
+            return response.IsSuccessStatusCode;
+        }
         public Task<List<UsuarioPendienteDto>?> ObtenerPendientesAsync()
             => _api.GetAsync<List<UsuarioPendienteDto>>($"{Endpoint}/pendientes");
 

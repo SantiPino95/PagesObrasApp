@@ -18,22 +18,52 @@ namespace PagesObrasApp.Pages.Admin
             _empleadoHttpService = empleadoHttpService;
         }
 
-        public List<UsuarioPendienteDto> Usuarios { get; set; } = new();  // ✅ TODOS los usuarios
+        public List<UsuarioPendienteDto> Usuarios { get; set; } = new();
         public List<EmpleadoListadoDTOs> Empleados { get; set; } = new();
 
-        [TempData] public string? Mensaje { get; set; }
-        [TempData] public string? MensajeTipo { get; set; }
+        [TempData]
+        public string? Mensaje { get; set; }
+
+        [TempData]
+        public string? MensajeTipo { get; set; } // "ok" o "error"
 
         public async Task OnGetAsync()
         {
-            // ✅ Obtener TODOS los usuarios
-            Usuarios = await _usuarioHttpService.ObtenerTodosAsync() ?? new();
-            Empleados = await _empleadoHttpService.ObtenerEmpleadosAsync() ?? new();
+            await CargarDatosAsync();
         }
 
+        // ── 1. EDITAR / ACTUALIZAR USUARIO ──
+        // (Unificado: llama a tu endpoint de actualización completa vía DTO)
+        public async Task<IActionResult> OnPostEditarUsuarioAsync(ActualizarUsuarioDto dto)
+        {
+            // Validación básica antes de llamar al servicio
+            if (dto == null || dto.IdUsuario <= 0 || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Rol))
+            {
+                Mensaje = "Todos los campos obligatorios deben estar completos.";
+                MensajeTipo = "error";
+                return RedirectToPage();
+            }
+
+            var exito = await _usuarioHttpService.ActualizarUsuarioAsync(dto.IdEmpleado, dto);
+
+            if (exito)
+            {
+                Mensaje = "Usuario y vinculación actualizados correctamente.";
+                MensajeTipo = "ok";
+            }
+            else
+            {
+                Mensaje = "Ocurrió un error al intentar actualizar el usuario.";
+                MensajeTipo = "error";
+            }
+
+            return RedirectToPage();
+        }
+
+        // ── 2. APROBAR USUARIO ──
         public async Task<IActionResult> OnPostAprobarUsuarioAsync(int id, string rol, int? idEmpleado)
         {
-            if (id == 0 || string.IsNullOrWhiteSpace(rol))
+            if (id <= 0 || string.IsNullOrWhiteSpace(rol))
             {
                 Mensaje = "Usuario y rol son obligatorios.";
                 MensajeTipo = "error";
@@ -46,11 +76,12 @@ namespace PagesObrasApp.Pages.Admin
             return RedirectToPage();
         }
 
+        // ── 3. RECHAZAR USUARIO ──
         public async Task<IActionResult> OnPostRechazarUsuarioAsync(int id)
         {
-            if (id == 0)
+            if (id <= 0)
             {
-                Mensaje = "Usuario no encontrado.";
+                Mensaje = "ID de usuario inválido.";
                 MensajeTipo = "error";
                 return RedirectToPage();
             }
@@ -61,39 +92,10 @@ namespace PagesObrasApp.Pages.Admin
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostSuspenderUsuarioAsync(int id)
-        {
-            if (id == 0)
-            {
-                Mensaje = "Usuario no encontrado.";
-                MensajeTipo = "error";
-                return RedirectToPage();
-            }
-
-            var suspendido = await _usuarioHttpService.SuspenderUsuarioAsync(id);
-            Mensaje = suspendido ? "Usuario suspendido correctamente." : "No se pudo suspender el usuario.";
-            MensajeTipo = suspendido ? "ok" : "error";
-            return RedirectToPage();
-        }
-
-        public async Task<IActionResult> OnPostReactivarUsuarioAsync(int id)
-        {
-            if (id == 0)
-            {
-                Mensaje = "Usuario no encontrado.";
-                MensajeTipo = "error";
-                return RedirectToPage();
-            }
-
-            var reactivado = await _usuarioHttpService.ReactivarUsuarioAsync(id);
-            Mensaje = reactivado ? "Usuario reactivado correctamente." : "No se pudo reactivar el usuario.";
-            MensajeTipo = reactivado ? "ok" : "error";
-            return RedirectToPage();
-        }
-
+        // ── 4. CAMBIAR ROL RÁPIDO ──
         public async Task<IActionResult> OnPostCambiarRolAsync(int id, string rol)
         {
-            if (id == 0 || string.IsNullOrWhiteSpace(rol))
+            if (id <= 0 || string.IsNullOrWhiteSpace(rol))
             {
                 Mensaje = "Usuario y rol son obligatorios.";
                 MensajeTipo = "error";
@@ -106,47 +108,44 @@ namespace PagesObrasApp.Pages.Admin
             return RedirectToPage();
         }
 
-        // ✅ NUEVO: Editar usuario
-        public async Task<IActionResult> OnPostEditarUsuarioAsync(int id, string email, string rol, int? idEmpleado)
+        // ── 5. SUSPENDER USUARIO ──
+        public async Task<IActionResult> OnPostSuspenderUsuarioAsync(int id)
         {
-            if (id == 0 || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(rol))
+            if (id <= 0)
             {
-                Mensaje = "Todos los campos son obligatorios.";
+                Mensaje = "ID de usuario inválido.";
                 MensajeTipo = "error";
                 return RedirectToPage();
             }
 
-            var rolCambiado = await _usuarioHttpService.CambiarRolAsync(id, rol);
-            if (!rolCambiado)
-            {
-                Mensaje = "No se pudo actualizar el rol.";
-                MensajeTipo = "error";
-                return RedirectToPage();
-            }
-
-            var usuario = Usuarios.FirstOrDefault(u => u.IdUsuario == id);
-            if (usuario != null && usuario.Estado != "Pendiente")
-            {
-                var aprobado = await _usuarioHttpService.AprobarUsuarioAsync(id, rol, idEmpleado);
-                if (!aprobado)
-                {
-                    Mensaje = "No se pudo actualizar el empleado vinculado.";
-                    MensajeTipo = "error";
-                    return RedirectToPage();
-                }
-            }
-
-            Mensaje = "Usuario actualizado correctamente.";
-            MensajeTipo = "ok";
+            var suspendido = await _usuarioHttpService.SuspenderUsuarioAsync(id);
+            Mensaje = suspendido ? "Usuario suspendido correctamente." : "No se pudo suspender el usuario.";
+            MensajeTipo = suspendido ? "ok" : "error";
             return RedirectToPage();
         }
 
-        // ✅ NUEVO: Eliminar usuario
+        // ── 6. REACTIVAR USUARIO ──
+        public async Task<IActionResult> OnPostReactivarUsuarioAsync(int id)
+        {
+            if (id <= 0)
+            {
+                Mensaje = "ID de usuario inválido.";
+                MensajeTipo = "error";
+                return RedirectToPage();
+            }
+
+            var reactivado = await _usuarioHttpService.ReactivarUsuarioAsync(id);
+            Mensaje = reactivado ? "Usuario reactivado correctamente." : "No se pudo reactivar el usuario.";
+            MensajeTipo = reactivado ? "ok" : "error";
+            return RedirectToPage();
+        }
+
+        // ── 7. ELIMINAR USUARIO ──
         public async Task<IActionResult> OnPostEliminarUsuarioAsync(int id)
         {
-            if (id == 0)
+            if (id <= 0)
             {
-                Mensaje = "Usuario no encontrado.";
+                Mensaje = "ID de usuario inválido.";
                 MensajeTipo = "error";
                 return RedirectToPage();
             }
@@ -155,6 +154,13 @@ namespace PagesObrasApp.Pages.Admin
             Mensaje = eliminado ? "Usuario eliminado correctamente." : "No se pudo eliminar el usuario.";
             MensajeTipo = eliminado ? "ok" : "error";
             return RedirectToPage();
+        }
+
+        // Método auxiliar reusable para la carga de datos del GET
+        private async Task CargarDatosAsync()
+        {
+            Usuarios = await _usuarioHttpService.ObtenerTodosAsync() ?? new();
+            Empleados = await _empleadoHttpService.ObtenerEmpleadosAsync() ?? new();
         }
     }
 }

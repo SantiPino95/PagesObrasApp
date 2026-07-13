@@ -14,15 +14,17 @@ namespace PagesObrasApp.Pages
     public class IndexModel : PageModel
     {
         private readonly IAuthHttpService _authHttpService;
+        private readonly IObraHttpService _obraHttpService;
 
-        public IndexModel(IAuthHttpService authHttpService)
+        public IndexModel(IAuthHttpService authHttpService, IObraHttpService obraHttpService)
         {
             _authHttpService = authHttpService;
+            _obraHttpService = obraHttpService;
+
         }
 
-        // AJUSTAR: id del rol por defecto para auto-registro en tu tabla Roles.
-        // El admin lo reasigna después vía AprobarUsuarioDto.
-        private const int IdRolPorDefecto = 5;
+       
+       
 
         public string? ErrorMessage { get; set; }
         public string ActiveTab { get; set; } = "cliente";
@@ -39,7 +41,7 @@ namespace PagesObrasApp.Pages
             }
         }
 
-        public IActionResult OnPostBuscarObra(string codigoObra)
+        public async Task<IActionResult> OnPostBuscarObra(string codigoObra)
         {
             ActiveTab = "cliente";
 
@@ -49,21 +51,29 @@ namespace PagesObrasApp.Pages
                 return Page();
             }
 
+            // Limpiamos los espacios y convertimos a mayúsculas
             var codigo = codigoObra.Trim().ToUpper();
-            var codigosValidos = new[]
-            {
-                "OB-2026-014", "OB-2026-002", "OB-2026-011",
-                "OB-2026-019", "OB-2025-087",
-            };
 
-            if (!codigosValidos.Contains(codigo))
+            if(codigo.Length != 10 )
             {
-                ErrorMessage = $"No encontramos ninguna obra con el código \"{codigoObra.ToUpper()}\".";
+
+                ErrorMessage = "El código de obra debe tener exactamente 10 caracteres.";
                 return Page();
             }
 
+            bool obraExiste = await _obraHttpService.ExisteObraPorCodigoAsync(codigo);
+
+            if (!obraExiste)
+            {
+                ErrorMessage = "No se encontró ninguna obra con ese código.";
+                return Page();
+            }
             return RedirectToPage("/Cliente/Seguimiento", new { codigo });
         }
+
+
+
+
 
         // ── POST: Login — vía AuthHttpService ─────────────────────────────
         public async Task<IActionResult> OnPostLoginAsync(string email, string password)
@@ -101,6 +111,7 @@ namespace PagesObrasApp.Pages
                 new Claim(ClaimTypes.Name,           usuario.NombreCompleto),
                 new Claim(ClaimTypes.Email,          usuario.Email),
                 new Claim(ClaimTypes.Role,           usuario.Rol),
+                new Claim("IdEmpleado",              usuario.IdEmpleado?.ToString() ?? "0")
             };
             if (usuario.IdEmpleado.HasValue)
                 claims.Add(new Claim("IdEmpleado", usuario.IdEmpleado.Value.ToString()));
@@ -114,11 +125,11 @@ namespace PagesObrasApp.Pages
                 new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8) }
             );
 
-            return usuario.Rol switch
+            return usuario.Rol.ToLower().Trim() switch
             {
-                "Administrador" => RedirectToPage("/Admin/Index"),
-                "Supervisor" => RedirectToPage("/Empleado/Index"),
-                "Empleado" => RedirectToPage("/Empleado/Index"),
+                "administrador" => RedirectToPage("/Admin/Index"),
+                "supervisor" => RedirectToPage("/Empleado/Index_Supervisor"),
+                "empleado" => RedirectToPage("/Empleado/Index"),
                 _ => RedirectToPage("/Index"),
             };
         }

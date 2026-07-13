@@ -6,6 +6,13 @@
 }
 
 <div class="admin-dashboard">
+    @if (Model.Mensaje != null)
+    {
+        <div class="alert @(Model.MensajeTipo == "ok" ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+            @Model.Mensaje
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Asignación de Empleados</h1>
         <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalAsignar">
@@ -19,7 +26,8 @@
                 <tr>
                     <th>Empleado</th>
                     <th>Obra</th>
-                    <th>Categoría</th>
+                    <th>Categoría / Rol</th>
+                    
                 </tr>
             </thead>
             <tbody>
@@ -28,11 +36,35 @@
                     <tr>
                         <td>@a.NombreCompleto</td>
                         <td>@a.NombreObra</td>
-                        <td>@a.Categoria</td>
+                        <td>
+                            <!-- Lógica dinámica -->
+                            @if (a.RolEnObra == "Supervisor")
+                            {
+                                <span class="badge bg-warning text-dark">⭐ Supervisor</span>
+                            }
+                            else
+                            {
+                                <span>@a.Categoria</span> <!-- Muestra "Oficial", "Carpintero", etc. -->
+                            }
+                        </td>
+      <td>  <form method="post" asp-page-handler="EliminarAsignacion" onsubmit="return confirm('¿Estás seguro de que deseas Deshacer esta asignación?');">
+            <!-- Pasamos los dos IDs ocultos para que coincidan con los parámetros del backend -->
+            <input type="hidden" name="idObra" value="@a.IdObra" />
+            <input type="hidden" name="idEmpleado" value="@a.IdEmpleado" />
+
+            <button type="submit" class="btn btn-danger btn-sm">
+                Desasignar
+            </button>
+        </form>
+                        </td>
                     </tr>
                 }
             </tbody>
+           
+           
+           
         </table>
+        
     </div>
 </div>
 
@@ -68,16 +100,13 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Rol en obra</label>
-                        <select name="rolEnObra" class="form-select">
-                            <option value="Oficial">Oficial</option>
-                            <option value="Capataz">Capataz</option>
-                            <option value="Ayudante">Ayudante</option>
+                        <select name="rolEnObra"  id= "rolEnObra" class="form-select" required>
+                            <option value="rol">Rol por defecto</option>
+                            <option value="Supervisor">Supervisor</option>
+                            
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Valor hora ($)</label>
-                        <input type="number" name="valorHoraAsignado" class="form-control" step="10" required>
-                    </div>
+                    
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

@@ -6,6 +6,15 @@
 }
 
 <div class="admin-dashboard">
+    <!-- 🚀 CONTENEDOR DE ALERTAS: Muestra los carteles verdes o rojos de TempData -->
+    @if (Model.Mensaje != null)
+    {
+        <div class="alert @(Model.MensajeTipo == "ok" ? "alert-success" : "alert-danger") alert-dismissible fade show mb-3" role="alert">
+            @Model.Mensaje
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Empleados</h1>
         <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNuevoEmpleado">
@@ -20,7 +29,11 @@
                     <th>Nombre</th>
                     <th>Categoría</th>
                     <th>Teléfono</th>
+                    <th>Cedula</th>
                     <th>Obras</th>
+                    <th>Estado</th>
+                    <th>Email</th>
+                    <th>Valor por Hora</th>
                 </tr>
             </thead>
             <tbody>
@@ -30,6 +43,7 @@
                         <td>@e.NombreCompleto</td>
                         <td>@e.Categoria</td>
                         <td>@e.Telefono</td>
+                        <td>@e.Cedula</td>
                         <td>
                             @{
                                 var asignaciones = Model.Asignados.Where(a => a.IdEmpleado == e.IdEmpleado).ToList();
@@ -43,6 +57,23 @@
                                 <span class="text-muted">Sin asignar</span>
                             }
                         </td>
+                        <td>
+                            @if (e.EstaAsignado)
+                            {
+                                <span class="badge bg-success">Asignado</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">No Asignado</span>
+                            }
+                        </td>
+                        <td>@e.Email</td>
+                        <td>@e.ValorHora.ToString("C",new System.Globalization.CultureInfo("es-UY"))</td>
+        <td><form method="post" asp-page-handler="EliminarEmpleado" asp-route-idEmpleado="@e.IdEmpleado"
+              onsubmit="return confirm('¿Estás seguro de eliminar este empleado?');">
+            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                            </form>
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -50,7 +81,7 @@
     </div>
 </div>
 
-<!-- MODAL: Nuevo Empleado -->
+<!-- MODAL: Nuevo Empleado (Estructura Corregida de Bootstrap) -->
 <div class="modal fade" id="modalNuevoEmpleado" tabindex="-1" aria-labelledby="modalNuevoEmpleadoLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -58,32 +89,63 @@
                 <h5 class="modal-title" id="modalNuevoEmpleadoLabel">Nuevo Empleado</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+
             <form method="post" asp-page-handler="CrearEmpleado">
+                
+
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nombre</label>
-                            <input type="text" name="nombre" class="form-control" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Apellido</label>
-                            <input type="text" name="apellido" class="form-control" required>
-                        </div>
-                    </div>
                     <div class="mb-3">
-                        <label class="form-label">Categoría</label>
-                        <input type="text" name="categoria" class="form-control" required>
+                        <label asp-for="EmpleadoNuevo.Nombre" class="form-label">Nombre</label>
+                        <input asp-for="EmpleadoNuevo.Nombre" class="form-control" />
+                        <span asp-validation-for="EmpleadoNuevo.Nombre" class="text-danger"></span>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Teléfono</label>
-                        <input type="text" name="telefono" class="form-control">
+                        <label asp-for="EmpleadoNuevo.Apellido" class="form-label">Apellido</label>
+                        <input asp-for="EmpleadoNuevo.Apellido" class="form-control" />
+                        <span asp-validation-for="EmpleadoNuevo.Apellido" class="text-danger"></span>
                     </div>
-                </div>
+
+                    <div class="mb-3">
+                        <label asp-for="EmpleadoNuevo.Categoria" class="form-label">Categoría</label>
+                        <input asp-for="EmpleadoNuevo.Categoria" class="form-control" />
+                        <span asp-validation-for="EmpleadoNuevo.Categoria" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="EmpleadoNuevo.Telefono" class="form-label">Teléfono</label>
+                        <input asp-for="EmpleadoNuevo.Telefono" class="form-control" />
+                        <span asp-validation-for="EmpleadoNuevo.Telefono" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="EmpleadoNuevo.Cedula" class="form-label">Cédula de Identidad</label>
+                        <!-- Puedes mantener el patrón HTML si necesitas forzar la longitud en el navegador -->
+                        <input asp-for="EmpleadoNuevo.Cedula" class="form-control"  />
+                        <span asp-validation-for="EmpleadoNuevo.Cedula" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="EmpleadoNuevo.Email" class="form-label">Correo Electrónico</label>
+                        <input asp-for="EmpleadoNuevo.Email" class="form-control" />
+                        <span asp-validation-for="EmpleadoNuevo.Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="EmpleadoNuevo.ValorHora" class="form-label">Valor por Hora</label>
+                        <input asp-for="EmpleadoNuevo.ValorHora" class="form-control"  step="any" />
+                        <span asp-validation-for="EmpleadoNuevo.ValorHora" class="text-danger"></span>
+                    </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning">Guardar</button>
+                    <button type="submit" class="btn btn-success">Guardar Empleado</button>
                 </div>
+                </div>
+
+
             </form>
+
         </div>
     </div>
 </div>
