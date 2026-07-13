@@ -45,6 +45,7 @@ namespace PagesObrasApp.Models.DTOs
     
     public class EmpleadoObraDTOs
     {
+        public int IdEmpleadoObra { get; set; }
         public int IdEmpleado { get; set; }
         public string NombreCompleto { get; set; } = null!;
         public string Categoria { get; set; } = null!;
@@ -65,15 +66,7 @@ namespace PagesObrasApp.Models.DTOs
     }
 
 
-    public class RegistroHoraDto
-    {
-        public int IdRegistro { get; set; }
-        public int IdEmpleadoObra { get; set; }
-        public DateTime Fecha { get; set; }
-        public decimal HorasComunes { get; set; }
-        public decimal HorasExtras { get; set; }
-        public string? ObservacionesEmpleado { get; set; }
-    }
+    
 
    
 }

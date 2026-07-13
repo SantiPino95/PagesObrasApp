@@ -37,14 +37,14 @@ namespace PagesObrasApp.Pages.Admin
         public async Task<IActionResult> OnPostEditarUsuarioAsync(ActualizarUsuarioDto dto)
         {
             // Validación básica antes de llamar al servicio
-            if (dto == null || dto.IdUsuario <= 0 || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Rol))
+            if (dto == null || dto.IdUsuario <= 0 || string.IsNullOrWhiteSpace(dto.Email) || dto.Rol == null)
             {
                 Mensaje = "Todos los campos obligatorios deben estar completos.";
                 MensajeTipo = "error";
                 return RedirectToPage();
             }
 
-            var exito = await _usuarioHttpService.ActualizarUsuarioAsync(dto.IdEmpleado, dto);
+            var exito = await _usuarioHttpService.ActualizarUsuarioAsync(dto.IdUsuario, dto);
 
             if (exito)
             {

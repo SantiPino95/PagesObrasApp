@@ -45,7 +45,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddHttpClient("API", client =>
 {
     var apiUrl = builder.Configuration["ApiBaseUrl"];
-    client.BaseAddress = new Uri(apiUrl ?? " https://left-groom-whomever.ngrok-free.dev/");
+    client.BaseAddress = new Uri(apiUrl ?? " https://localhost:7259");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
@@ -54,6 +54,7 @@ builder.Services.AddScoped<IApiService, ApiService>();
 builder.Services.AddScoped<IAuthHttpService, AuthHttpService>();
 builder.Services.AddScoped<IClienteHttpService, ClienteHttpService>();
 builder.Services.AddScoped<IEmpleadoHttpService, EmpleadoHttpService>();
+builder.Services.AddScoped<IRegistroHoraHttpService, RegistroHoraHttpService>();
 builder.Services.AddScoped<IGastoHttpService, GastoHttpService>();
 builder.Services.AddScoped<IHerramientaHttpService, HerramientaHttpService>();
 builder.Services.AddScoped<IMaterialHttpService, MaterialHttpService>();

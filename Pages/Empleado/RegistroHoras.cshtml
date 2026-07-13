@@ -185,6 +185,73 @@
         </div>
     </section>
 
+    @if (Model.EsSupervisor)
+    {
+        <!-- ══════════ VISTA DE EQUIPO (SOLO SUPERVISOR) ══════════ -->
+        <div class="emp-equipo-divider">
+            <span class="emp-eyebrow">Vista de equipo — Supervisor</span>
+        </div>
+
+        <!-- HORAS DEL EQUIPO -->
+        <section class="emp-section">
+            <span class="emp-eyebrow">Horas del equipo — @today.ToString("MMMM", cultura)</span>
+            <div class="emp-historial mt-2">
+                @foreach (var r in Model.RegistrosEquipo.OrderByDescending(x => x.Fecha))
+                {
+                    var diasAtras = (today - r.Fecha).Days;
+                    var fechaLbl = diasAtras == 0 ? "Hoy" : diasAtras == 1 ? "Ayer" : r.Fecha.ToString("ddd d MMM", cultura);
+                    <div class="emp-hist-row">
+                        <div class="emp-hist-fecha">
+                            <span class="emp-hist-dia">@fechaLbl</span>
+                        </div>
+                        <div class="emp-hist-obra">@r.NombreObra</div>
+                        <div class="emp-hist-horas">
+                            <span class="emp-hist-h">@r.HorasComunes.ToString("0.#")h</span>
+                            @if (r.HorasExtras > 0)
+                            {
+                                <span class="emp-hist-ext">+@r.HorasExtras.ToString("0.#") ext</span>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (!Model.RegistrosEquipo.Any())
+                {
+                    <div class="emp-sin-registros">No hay registros de horas del equipo este mes.</div>
+                }
+            </div>
+        </section>
+
+        <!-- NOVEDADES DEL EQUIPO -->
+        <section class="emp-section">
+            <span class="emp-eyebrow">Novedades del equipo</span>
+            <div class="d-flex flex-column gap-2 mt-2">
+                @foreach (var n in Model.NovedadesEquipo)
+                {
+                    var esPendiente = n.EstadoRevision == "Pendiente";
+                    <div class="emp-rep-card @(esPendiente ? "emp-rep-card--pendiente" : "emp-rep-card--revisado")">
+                        <div class="emp-rep-top">
+                            <div>
+                                <span class="emp-rep-tipo">@n.TipoNovedad</span>
+                                <span class="emp-rep-obra">@n.NombreObra</span>
+                            </div>
+                            <div>
+                                <span class="emp-mono emp-steel" style="font-size:.65rem">@n.Fecha.ToString("ddd d MMM", cultura)</span>
+                                <span class="emp-est-badge @(esPendiente ? "emp-est-badge--pendiente" : "emp-est-badge--revisado")">
+                                    @(esPendiente ? "● Pendiente" : "✓ Revisado")
+                                </span>
+                            </div>
+                        </div>
+                        <p class="emp-rep-desc">@n.Descripcion</p>
+                    </div>
+                }
+                @if (!Model.NovedadesEquipo.Any())
+                {
+                    <div class="emp-sin-registros">No hay novedades reportadas en tus obras.</div>
+                }
+            </div>
+        </section>
+    }
+
     <!-- HISTORIAL DEL MES -->
     <section class="emp-section">
         <span class="emp-eyebrow">Historial — @today.ToString("MMMM", cultura)</span>
@@ -597,6 +664,87 @@
         border: 1px solid var(--bp-line);
         border-radius: 8px;
     }
+
+    /* Tarjetas de novedad (reutilizadas para "Novedades del equipo") */
+    .emp-rep-card {
+        background: #fff;
+        border: 1px solid var(--bp-line);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .emp-rep-card--pendiente {
+        border-left: 4px solid var(--bp-safety);
+    }
+
+    .emp-rep-card--revisado {
+        border-left: 4px solid var(--bp-ok);
+        opacity: .7;
+    }
+
+    .emp-rep-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: .5rem;
+        flex-wrap: wrap;
+        padding: .75rem .9rem .4rem;
+    }
+
+    .emp-rep-tipo {
+        font-weight: 600;
+        font-size: .82rem;
+    }
+
+    .emp-rep-obra {
+        font-size: .75rem;
+        color: var(--bp-steel);
+        background: #F1EFEA;
+        padding: .1rem .45rem;
+        border-radius: 100px;
+        margin-left: .4rem;
+    }
+
+    .emp-rep-desc {
+        font-size: .82rem;
+        line-height: 1.5;
+        color: var(--bp-ink);
+        padding: .3rem .9rem .75rem;
+        margin: 0;
+    }
+
+    .emp-est-badge {
+        font-size: .68rem;
+        font-weight: 600;
+        padding: .15rem .5rem;
+        border-radius: 100px;
+        white-space: nowrap;
+    }
+
+    .emp-est-badge--pendiente {
+        background: #FFF8E8;
+        color: #92670a;
+    }
+
+    .emp-est-badge--revisado {
+        background: #EAF4EE;
+        color: var(--bp-ok);
+    }
+
+    /* Separador de la vista de equipo (supervisor) */
+    .emp-equipo-divider {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        margin: 2rem 0 1.1rem;
+        padding-top: 1.25rem;
+        border-top: 2px dashed var(--bp-line);
+    }
+
+        .emp-equipo-divider .emp-eyebrow {
+            color: var(--bp-blueprint);
+            font-weight: 700;
+        }
 
     .alert {
         padding: .75rem 1rem;

@@ -12,11 +12,19 @@ namespace PagesObrasApp.Pages.Empleado
     {
         private readonly IApiService _api;
         private readonly IEmpleadoHttpService _empleadoHttpService;
+        private readonly IRegistroHoraHttpService _registroHorasHttpService;
+        private readonly INovedadHttpService _novedadHttpService;
 
-        public RegistroHorasModel(IApiService api, IEmpleadoHttpService empleadoHttpService)
+        public RegistroHorasModel(
+            IApiService api,
+            IEmpleadoHttpService empleadoHttpService,
+            IRegistroHoraHttpService registroHorasHttpService,
+            INovedadHttpService novedadHttpService)
         {
             _api = api;
             _empleadoHttpService = empleadoHttpService;
+            _registroHorasHttpService = registroHorasHttpService;
+            _novedadHttpService = novedadHttpService;
         }
 
         // ── Datos del empleado logueado ──
@@ -46,6 +54,16 @@ namespace PagesObrasApp.Pages.Empleado
         // ── Mensajes ──
         [TempData] public string? Mensaje { get; set; }
         [TempData] public string? MensajeTipo { get; set; }
+
+        // ── Vista de equipo (solo Supervisor) ──
+        // NOTA: usamos el tipo totalmente calificado porque este archivo define
+        // más abajo su propia clase local "RegistroHoraDto" (mock), distinta de la
+        // que devuelve IRegistroHorasHttpService (PagesObrasApp.Models.DTOs.RegistroHoraDto,
+        // que sí trae IdObra/NombreObra).
+        public bool EsSupervisor { get; set; }
+        public List<string> ObrasSupervisadas { get; set; } = new();
+        public List<PagesObrasApp.Models.DTOs.RegistroHoraDto> RegistrosEquipo { get; set; } = new();
+        public List<NovedadListadoDto> NovedadesEquipo { get; set; } = new();
 
         public async Task<IActionResult> OnGetAsync()
         {
@@ -84,6 +102,29 @@ namespace PagesObrasApp.Pages.Empleado
 
             // Buscar registro de hoy
             RegistroHoy = RegistrosMes.FirstOrDefault(r => r.Fecha.Date == Hoy.Date);
+
+            // ── Vista de equipo: solo si el usuario logueado es Supervisor ──
+            EsSupervisor = User.IsInRole("Supervisor");
+
+            if (EsSupervisor)
+            {
+                // Obras donde el propio supervisor también está asignado
+                ObrasSupervisadas = Asignaciones
+                    .Select(a => a.NombreObra)
+                    .Distinct()
+                    .ToList();
+
+                //// Horas del equipo del mes actual (la API filtra según el supervisor)
+                //RegistrosEquipo = await _registroHorasHttpService
+                //    .ObtenerRegistrosPorEquipoAsync(IdEmpleado, InicioMes, FinMes) ?? new();
+
+                // Novedades del equipo, acotadas a las obras donde el supervisor también trabaja
+                var todasNovedades = await _novedadHttpService.ObtenerNovedadesAsync() ?? new();
+                NovedadesEquipo = todasNovedades
+                    .Where(n => ObrasSupervisadas.Contains(n.NombreObra))
+                    .OrderByDescending(n => n.Fecha)
+                    .ToList();
+            }
 
             return Page();
         }

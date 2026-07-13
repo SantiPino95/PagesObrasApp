@@ -15,9 +15,10 @@
 
     public class ActualizarUsuarioDto
     {
+        public int IdUsuario { get; set; }
         public string Email { get; set; } = null!;
         public string? Estado { get; set; }
-        public int? IdRol { get; set; }
+        public string? Rol { get; set; }        // string, no IdRol
         public int? IdEmpleado { get; set; }
     }
 }

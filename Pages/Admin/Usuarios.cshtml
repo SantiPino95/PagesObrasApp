@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model PagesObrasApp.Pages.Admin.UsuariosModel
 @{
     Layout = "_AdminLayout";
@@ -157,6 +157,19 @@
 <!-- ============================================================ -->
 <!-- MODAL: EDITAR USUARIO -->
 <!-- ============================================================ -->
+<!--
+    IMPORTANTE: los "name" de este formulario deben coincidir EXACTAMENTE
+    (sin distinguir mayúsculas) con las propiedades de ActualizarUsuarioDto:
+
+    public class ActualizarUsuarioDto
+    {
+        public int IdUsuario { get; set; }
+        public string Email { get; set; } = null!;
+        public string? Estado { get; set; }
+        public string? Rol { get; set; }
+        public int? IdEmpleado { get; set; }
+    }
+-->
 <div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -165,15 +178,15 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" asp-page-handler="EditarUsuario">
-                <input type="hidden" name="id" id="editUserId">
+                <input type="hidden" name="IdUsuario" id="editUserId">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Email</label>
-                        <input type="email" name="email" id="editUserEmail" class="form-control" required>
+                        <input type="email" name="Email" id="editUserEmail" class="form-control" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Rol</label>
-                        <select name="rol" id="editUserRol" class="form-select" required>
+                        <select name="Rol" id="editUserRol" class="form-select" required>
                             <option value="Administrador">Administrador</option>
                             <option value="Supervisor">Supervisor</option>
                             <option value="Empleado">Empleado</option>
@@ -181,7 +194,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Vincular empleado</label>
-                        <select name="idEmpleado" id="editUserEmpleado" class="form-select">
+                        <select name="IdEmpleado" id="editUserEmpleado" class="form-select">
                             <option value="">Sin empleado</option>
                             @foreach (var e in Model.Empleados)
                             {
