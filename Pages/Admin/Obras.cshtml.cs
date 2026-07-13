@@ -31,6 +31,14 @@ namespace PagesObrasApp.Pages.Admin
             Clientes = await _clienteHttpService.ObtenerClientesAsync() ?? new();
         }
 
+
+        public async Task<bool> ExisteObraPorCodigoPublicoAsync(string codigo)
+        {
+            // Ajusta la ruta del string según cómo manejes las URLs en tu HttpClient
+            var response = await _obraHttpService.ExisteObraPorCodigoAsync(codigo);
+
+            return response;
+        }
         public async Task<IActionResult> OnPostCrearObraAsync(
             string nombreObra, int idCliente, string direccion,
             DateTime fechaInicio, DateTime? fechaFinPrevista)
@@ -56,5 +64,37 @@ namespace PagesObrasApp.Pages.Admin
             MensajeTipo = creado ? "ok" : "error";
             return RedirectToPage();
         }
+
+
+        public async Task<IActionResult> OnPostCambiarEstadoAsync(int id, string nuevoEstado)
+        {
+            // 1. Buscamos el objeto completo desde la API para no perder sus datos (Nombre, avance, etc.)
+            var obra = await _obraHttpService.ObtenerObraPorIdAsync(id);
+            if (obra == null)
+            {
+                TempData["MensajeError"] = "La obra no existe.";
+                return RedirectToPage();
+            }
+
+            // 2. Le asignamos el nuevo estado que viene del dropdown
+            obra.Estado = nuevoEstado;
+
+            // Si el administrador decide pasarla a Finalizada manualmente desde aquí, forzamos el 100%
+            if (nuevoEstado == "Finalizada")
+            {
+                obra.PorcentajeAvanceActual = 100;
+            }
+
+            // 3. Enviamos el ID y la OBRA completa (objeto) a la API
+            var guardado = await _obraHttpService.ActualizarObraAsync(id, obra);
+
+            if (!guardado)
+            {
+                TempData["MensajeError"] = "No se pudo actualizar el estado en el servidor.";
+            }
+
+            return RedirectToPage();
+        }
+
     }
 }
